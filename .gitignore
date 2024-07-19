@@ -1,2 +1,4 @@
+build/
 .clang-format
 build.sh
+run.sh
