@@ -1,4 +1,5 @@
 build/
+.vscode/
 .clang-format
 build.sh
 run.sh
