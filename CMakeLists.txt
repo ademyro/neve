@@ -7,6 +7,7 @@ add_executable(neve
   src/mem.c
   src/debug.c
   src/val.c
+  src/vm.c
 )
 
 target_include_directories(neve PRIVATE 

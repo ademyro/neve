@@ -7,4 +7,6 @@
 
 #define IGNORE(x) (void)(x)
 
+#define DEBUG_EXEC
+
 #endif
