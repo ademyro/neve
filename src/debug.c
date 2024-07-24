@@ -67,6 +67,21 @@ size_t disasmInstr(Chunk *ch, size_t offset) {
     case OP_CONST:
       return constInstr("push", ch, offset);
     
+    case OP_NEG:
+      return simpleInstr("neg", offset);
+
+    case OP_ADD:
+      return simpleInstr("add", offset);
+
+    case OP_SUB:
+      return simpleInstr("sub", offset);
+
+    case OP_MUL:
+      return simpleInstr("mul", offset);
+
+    case OP_DIV:
+      return simpleInstr("div", offset);
+
     default:
       printf("unknown instr %u\n", instr);
       return offset + 1;
