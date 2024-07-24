@@ -1,5 +1,7 @@
 build/
 .vscode/
 .clang-format
+.clangd
+.DS_Store
 build.sh
 run.sh

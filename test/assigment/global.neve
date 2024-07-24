@@ -1,0 +1,8 @@
+var a = "before"
+log a # expect: before
+
+a = "after"
+print a # expect: after
+
+print a = "arg" # expect: arg
+print a # expect: arg

@@ -1,0 +1,7 @@
+class Foo
+  fun assign_self 
+    self = "value" # Error at '=': Invalid assignment target.
+  end
+end
+
+Foo().assign_self
