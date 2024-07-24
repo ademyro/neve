@@ -23,6 +23,8 @@ typedef enum {
 VM newVM(Chunk *ch);
 void freeVM(VM *vm);
 
+void resetStack(VM *vm);
+
 Aftermath interpret(VM *vm);
 
 void push(VM *vm, Val val);

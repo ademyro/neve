@@ -7,6 +7,11 @@
 typedef enum {
   OP_CONST,
   OP_CONST_LONG,
+  OP_NEG,
+  OP_ADD,
+  OP_SUB,
+  OP_MUL,
+  OP_DIV,
   OP_RET
 } OpCode;
 
