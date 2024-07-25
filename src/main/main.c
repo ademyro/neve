@@ -1,43 +1,90 @@
+#include <stdio.h>
+#include <stdlib.h>
+
 #include "common.h"
 #include "err.h"
+#include "vm.h"
 
-/*
+static const char *readFile(const char *filename) {
+  FILE *f = fopen(filename, "rb");
+
+  if (f == NULL) {
+    cliErr("%s: file not found", filename);
+    exit(1);
+  }
+
+  fseek(f, 0L, SEEK_END);
+  size_t size = ftell(f);
+  rewind(f);
+
+  char *buf = malloc(size + 1);
+
+  if (buf == NULL) {
+    cliErr("not enough memory available to read %s", filename);
+    cliErr("well, that’s unexpected.  is your ram usage high?");
+    cliErr("neve needed %zu bytes to read your file", size * sizeof (char));
+    cliErr("and store it in a buffer.  seems like your ram was a little");
+    cliErr("overwhelmed by another process, and couldn’t give neve the");
+    cliErr("space it needed.");
+
+    exit(1);
+  }
+
+  size_t end = fread(buf, sizeof (char), size, f);
+
+  if (end < size) {
+    cliErr("%s: couldn't read the full file", filename);
+    cliErr("this is most likely because a call to fread() failed.");
+
+    exit(1);
+  }
+
+  buf[end] = '\0';
+
+  fclose(f);
+  return buf;
+}
+
 static void repl() {
-  // TODO: implement once the error module is complete
+  // TODO: once we implement variable declarations, please implement
+  // a better repl
+  const size_t lim = 1024;
+  char line[lim];
+
+  while (true) {
+    printf("? ");
+
+    if (!fgets(line, (int)lim, stdin)) {
+      printf("\n");
+      break;
+    }
+
+    interpret(line);
+  }
 }
 
 static void runFile(const char *filename) {
-  // TODO: implement once the error module is complete
+  const char *src = readFile(filename);
+
+  Aftermath aftermath = interpret(src); 
+  
+  if (aftermath != AFTERMATH_OK) {
+    exit(1);
+  }
 }
-*/
 
 int main(const int argc, const char **argv) {
   IGNORE(argc);
   IGNORE(argv);
 
-  ErrMod mod = newErrMod(
-    "test.neve", 
-    "let my_str = @not an expr\n"
-    "didn't expect that"
-  );
-
-  const int col = 14;
-  const int length = 12;
-
-  Loc loc = newLoc();
-  loc.col = col;
-  loc.length = length;
-  loc.line = 1;
-
-  setErrLoc(&mod, loc);
-  setErr(&mod, ERR_INVALID_VALUE);
-
-  reportErr(mod, "unexpected token");
-  showOffendingLine(mod, "was looking for a value (like an int)");
-  showHint(mod, "you might’ve made a typo or forgotten a comma."); 
-  showHint(mod, "here's an example of a well-formed expression:");
-  suggestExample(mod, "    let x = y + z - 42");
-  endErr(mod);
+  if (argc == 0) {
+    repl();
+  } else if (argc == 1) {
+    runFile(argv[1]);
+  } else {
+    cliErr("usage: `neve [path]`");
+    exit(1);
+  }
 
   return 0;
 }
