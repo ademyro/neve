@@ -20,7 +20,7 @@ typedef struct {
 
 RenderCtx newRenderCtx(Loc loc);
 
-void renderErrMsg(const char *fmt, va_list args);
+void renderErrMsg(int id, const char *fmt, va_list args);
 void renderLocus(RenderCtx ctx, const char *fname);
 void renderLine(RenderCtx ctx, const char *src);
 void renderHint(RenderCtx ctx, const char *fmt, va_list args);

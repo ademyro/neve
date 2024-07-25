@@ -9,7 +9,8 @@ ErrMod newErrMod(const char *fname, const char *src) {
   ErrMod mod = {
     .src = src,
     .fname = fname,
-    .ctx = ctx
+    .ctx = ctx,
+    .err = ERR_CLI
   };
 
   return mod;
@@ -20,20 +21,24 @@ void setErrLoc(ErrMod *mod, Loc loc) {
   mod->ctx = newRenderCtx(loc);
 }
 
+void setErr(ErrMod *mod, Err id) {
+  mod->err = id; 
+}
+
 void cliErr(const char *fmt, ...) {
   va_list args;
 
   va_start(args, fmt);
-  renderErrMsg(fmt, args);
+  renderErrMsg(ERR_CLI, fmt, args);
   va_end(args);
 }
 
 void reportErr(ErrMod mod, const char *fmt, ...) {
-  va_list args;   
+  va_list args;
 
   va_start(args, fmt);
 
-  renderErrMsg(fmt, args); 
+  renderErrMsg(mod.err, fmt, args); 
   renderLocus(mod.ctx, mod.fname); 
 
   va_end(args);
@@ -108,4 +113,8 @@ void suggestExample(ErrMod mod, const char *fmt, ...) {
   va_start(args, fmt);
   renderFmtLine(mod.ctx, fmt, args);
   va_end(args);
+}
+
+void endErr(ErrMod mod) {
+  showHint(mod, "confused?  run " WHITE "`neve --whats E%03d`", mod.err);
 }

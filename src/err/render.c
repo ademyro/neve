@@ -59,8 +59,12 @@ static void writeFrom(const char *src, const int until) {
   }
 }
 
-static void writeLinePipes(const int lineDigits, const int line) {
+static void writeEmptyPipe(const int lineDigits) {
   writef(BLUE "%*s | \n", lineDigits, "");
+}
+
+static void writeLinePipes(const int lineDigits, const int line) {
+  writeEmptyPipe(lineDigits);
   writef("%*d | " RESET, lineDigits, line); 
 }
 
@@ -81,10 +85,17 @@ RenderCtx newRenderCtx(Loc loc) {
   return ctx;
 }
 
-void renderErrMsg(const char *fmt, va_list args) {
+void renderErrMsg(int id, const char *fmt, va_list args) {
   write(RED "error" WHITE ": ");
 
   vfprintf(stderr, fmt, args);
+
+  if (id < 1) {
+    endFormat();
+    return;
+  }
+
+  writef(RED " [E%03d]", id);
 
   endFormat();
 }
@@ -207,4 +218,5 @@ void renderFmtLine(RenderCtx ctx, const char *fmt, va_list args) {
   vfprintf(stderr, fmt, args);
 
   endFormat();
+  writeEmptyPipe(ctx.lineDigits);
 }

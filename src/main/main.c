@@ -30,15 +30,14 @@ int main(const int argc, const char **argv) {
   loc.line = 1;
 
   setErrLoc(&mod, loc);
+  setErr(&mod, ERR_INVALID_VALUE);
 
   reportErr(mod, "unexpected token");
   showOffendingLine(mod, "was looking for a value (like an int)");
   showHint(mod, "you might’ve made a typo or forgotten a comma."); 
   showHint(mod, "here's an example of a well-formed expression:");
   suggestExample(mod, "    let x = y + z - 42");
-  showHint(mod, "where:");
-  suggestExample(mod, "    y + z - 42");
-  showHint(mod, "is the well formed expression.");
+  endErr(mod);
 
   return 0;
 }
