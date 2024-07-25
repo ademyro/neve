@@ -1,5 +1,5 @@
-#ifndef nevec_error_h
-#define nevec_error_h
+#ifndef ERR_H
+#define ERR_H
 
 #include "tok.h"
 
