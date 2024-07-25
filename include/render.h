@@ -14,19 +14,29 @@
 #define RESET "\033[0m"
 
 typedef struct {
-  int line;
+  int lineDigits;
+  Loc loc;
 } RenderCtx;
 
-void setLine(int line);
+RenderCtx newRenderCtx(Loc loc);
+
 void renderErrMsg(const char *fmt, va_list args);
-void renderLocus(const char *fname, Loc loc);
-void renderLine(char *src, Loc loc);
-void highlightErr(Loc loc, const char *fmt, va_list args);
-void highlightNote(Loc loc, const char *fmt, va_list args);
-void highlightChange(Loc loc, const char *fmt, va_list args);
-void renderHint(const char *fmt, va_list args);
-void renderModifiedLine(char *src, Loc loc, const char *fmt, va_list args);
-void renderFix(Loc loc, const char *fmt, va_list args);
-void renderFmtLine(Loc loc, const char *fmt, va_list args);
+void renderLocus(RenderCtx ctx, const char *fname);
+void renderLine(RenderCtx ctx, const char *src);
+void renderHint(RenderCtx ctx, const char *fmt, va_list args);
+void renderFmtLine(RenderCtx ctx, const char *fmt, va_list args);
+
+void highlightErr(RenderCtx ctx, const char *fmt, va_list args);
+void highlightNote(RenderCtx ctx, const char *fmt, va_list args);
+
+void renderModifiedLine(
+  Loc fixLoc, 
+  const char *src,
+  const char *fmt, 
+  va_list args
+);
+
+void renderFix(Loc fixLoc, const char *fmt, va_list args);
+void highlightChange(Loc fixLoc, const char *fmt, va_list args);
 
 #endif

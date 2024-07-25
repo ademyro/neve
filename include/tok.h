@@ -2,10 +2,10 @@
 #define TOK_H
 
 typedef struct {
-  const int line;
-  const int col;
+  int line;
+  int col;
   
-  const int length;
+  int length;
 } Loc;
 
 typedef enum {
