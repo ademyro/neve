@@ -1,6 +1,7 @@
 #include <stdio.h>
 
 #include "common.h"
+#include "compiler.h"
 #include "vm.h"
 
 #ifdef DEBUG_EXEC
@@ -121,8 +122,11 @@ static Aftermath run(VM *vm) {
 #undef BIN_OP
 }
 
-Aftermath interpret(VM *vm) {
-  return run(vm);
+Aftermath interpret(const char *src) {
+  IGNORE(run);
+  compile(src);
+
+  return AFTERMATH_OK;
 }
 
 void push(VM *vm, Val val) {

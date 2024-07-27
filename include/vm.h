@@ -25,7 +25,7 @@ void freeVM(VM *vm);
 
 void resetStack(VM *vm);
 
-Aftermath interpret(VM *vm);
+Aftermath interpret(const char *src);
 
 void push(VM *vm, Val val);
 Val pop(VM *vm);
