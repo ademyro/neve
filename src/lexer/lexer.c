@@ -6,7 +6,8 @@ Lexer newLexer(const char *src) {
   Lexer lexer = {
     .start = src,
     .curr = src,
-    .loc = newLoc()
+    .loc = newLoc(),
+    .interpolDepth = 0
   };
 
   return lexer;
@@ -72,6 +73,16 @@ static bool match(Lexer *lexer, char c) {
 
   advance(lexer);
   return true;
+}
+
+static bool checkSeq(Lexer *lexer, const char *seq) {
+  size_t seqSize = strlen(seq);
+
+  if (seqSize != 2) {
+    return false;
+  }
+
+  return peek(lexer) == seq[0] && peekAhead(lexer) == seq[1];
 }
 
 static Tok makeTok(Lexer *lexer, TokType type) {
@@ -295,10 +306,26 @@ static Tok number(Lexer *lexer) {
   return makeTok(lexer, isFloat ? TOK_FLOAT : TOK_INT);
 }
 
+static Tok interpol(Lexer *lexer) {
+  lexer->interpolDepth++;
+
+  Tok interpol = makeTok(lexer, TOK_INTERPOL);
+
+  // skip the "#{"
+  advance(lexer);
+  advance(lexer);
+
+  return interpol;
+}
+
 static Tok string(Lexer *lexer) {
   while (peek(lexer) != '"' && !isAtEnd(lexer)) {
     if (peek(lexer) == '\n') {
       newline(lexer);
+    }
+
+    if (checkSeq(lexer, "#{")) {
+      return interpol(lexer); 
     }
 
     advance(lexer);
@@ -388,7 +415,7 @@ Tok nextTok(Lexer *lexer) {
         match(lexer, '.') ? TOK_DOT_DOT : TOK_DOT
       );
 
-    case ';': 
+    case ';':
       newline(lexer);
       return makeTok(lexer, TOK_NEWLINE);
 
@@ -397,6 +424,18 @@ Tok nextTok(Lexer *lexer) {
       return makeTok(lexer, TOK_NEWLINE);
 
     case '"':
+      return string(lexer);
+
+    case '}':
+      if (lexer->interpolDepth == 0) {
+        return unexpectedChar(lexer);
+      } 
+
+      lexer->interpolDepth--;
+
+      // discard the '}'
+      sync(lexer);
+
       return string(lexer);
 
     default:

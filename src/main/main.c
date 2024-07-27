@@ -66,6 +66,8 @@ static void runFile(const char *filename) {
   if (aftermath != AFTERMATH_OK) {
     exit(1);
   }
+
+  free((char *)src);
 }
 
 int main(const int argc, const char **argv) {

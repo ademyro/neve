@@ -8,6 +8,8 @@ typedef struct {
   const char *curr;
 
   Loc loc;
+
+  int interpolDepth;
 } Lexer;
 
 Lexer newLexer(const char *src);
