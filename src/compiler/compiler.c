@@ -7,7 +7,7 @@ void compile(const char *src) {
   Lexer lexer = newLexer(src); 
 
   int line = -1;
-  for (;;) {
+  while (true) {
     Tok tok = nextTok(&lexer);
 
     if (tok.loc.line != line) {
@@ -17,7 +17,7 @@ void compile(const char *src) {
       printf("   | ");
     }
 
-    printf("%2d '%.*s'\n", tok.type, tok.loc.length, tok.lexeme); 
+    printf("%2d '%.*s'\n", tok.type, (int)tok.loc.length, tok.lexeme); 
 
     if (tok.type == TOK_EOF) {
       break;

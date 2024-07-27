@@ -68,8 +68,8 @@ static void writeLinePipes(const int lineDigits, const int line) {
   writef("%*d | " RESET, lineDigits, line); 
 }
 
-static void highlight(int length, char highlighter) {
-  for (int i = 0; i < length; i++) {
+static void highlight(size_t length, char highlighter) {
+  for (size_t i = 0; i < length; i++) {
     fputc(highlighter, stderr);
   } 
 
@@ -118,7 +118,7 @@ void renderLine(RenderCtx ctx, const char *src) {
   writeLinePipes(ctx.lineDigits, loc.line);
 
   int col = loc.col - 1;
-  int errEnd = col + loc.length;
+  int errEnd = col + (int)loc.length;
 
   if (lineStart == NULL) {
     write(RED "could not find line");
@@ -126,7 +126,7 @@ void renderLine(RenderCtx ctx, const char *src) {
 
   writeFrom(lineStart, col);
   write(RED);
-  writeFrom(lineStart + col, loc.length);
+  writeFrom(lineStart + col, (int)loc.length);
   write(RESET);
   writeFrom(lineStart + errEnd, lineEnd - errEnd);
 
@@ -156,7 +156,7 @@ void highlightNote(RenderCtx ctx, const char *fmt, va_list args) {
 }
 
 void highlightChange(Loc fixLoc, const char *fmt, va_list args) {
-  int changeLength = vsnprintf(NULL, 0, fmt, args);
+  size_t changeLength = (size_t)vsnprintf(NULL, 0, fmt, args);
 
   const int newLineDigits = digitsIn(fixLoc.col);
   writef(BLUE "%*s |", newLineDigits, ""); 

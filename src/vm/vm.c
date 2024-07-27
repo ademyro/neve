@@ -123,6 +123,7 @@ static Aftermath run(VM *vm) {
 }
 
 Aftermath interpret(const char *src) {
+  IGNORE(run);
   compile(src);
 
   return AFTERMATH_OK;

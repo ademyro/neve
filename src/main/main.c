@@ -14,18 +14,13 @@ static const char *readFile(const char *filename) {
   }
 
   fseek(f, 0L, SEEK_END);
-  size_t size = ftell(f);
+  size_t size = (size_t)ftell(f);
   rewind(f);
 
   char *buf = malloc(size + 1);
 
   if (buf == NULL) {
     cliErr("not enough memory available to read %s", filename);
-    cliErr("well, that’s unexpected.  is your ram usage high?");
-    cliErr("neve needed %zu bytes to read your file", size * sizeof (char));
-    cliErr("and store it in a buffer.  seems like your ram was a little");
-    cliErr("overwhelmed by another process, and couldn’t give neve the");
-    cliErr("space it needed.");
 
     exit(1);
   }
@@ -77,9 +72,9 @@ int main(const int argc, const char **argv) {
   IGNORE(argc);
   IGNORE(argv);
 
-  if (argc == 0) {
+  if (argc == 1) {
     repl();
-  } else if (argc == 1) {
+  } else if (argc == 2) {
     runFile(argv[1]);
   } else {
     cliErr("usage: `neve [path]`");
