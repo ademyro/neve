@@ -1,5 +1,5 @@
 # Neve
-Neve is a modern, hybrid-paradigm programming language designed to deliver reliability through static typing, whiel providing users a soothing* syntax to work with.
+Neve is a modern, hybrid-paradigm programming language designed to deliver reliability through static typing, while providing users a soothing* syntax to work with.
 
 ## Example
 ```rb
