@@ -17,7 +17,11 @@ void compile(const char *src) {
       printf("   | ");
     }
 
-    printf("%2d '%.*s'\n", tok.type, (int)tok.loc.length, tok.lexeme); 
+    if (tok.type == TOK_NEWLINE) {
+      printf("%2d '\\n'\n", tok.type);
+    } else {
+      printf("%2d '%.*s'\n", tok.type, (int)tok.loc.length, tok.lexeme); 
+    }
 
     if (tok.type == TOK_EOF) {
       break;
