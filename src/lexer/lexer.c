@@ -149,12 +149,23 @@ static TokType checkKeyword(
 }
 
 static TokType checkForE(Lexer *lexer) {
+  const size_t idLength = (size_t)(lexer->curr - lexer->start);
+
   switch (lexer->start[1]) {
     case 'l': 
       return checkKeyword(lexer, 2, 2, "se", TOK_ELSE);
 
     case 'n': 
-      return checkKeyword(lexer, 2, 1, "d", TOK_END);
+      if (idLength > 2) {
+        switch (lexer->start[2]) {
+          case 'd':
+            return checkKeyword(lexer, 3, 0, "", TOK_END);
+
+          case 'u':
+            return checkKeyword(lexer, 3, 1, "m", TOK_ENUM);
+        }
+      } 
+      break;
   }
 
   return TOK_ID;
@@ -252,6 +263,9 @@ static TokType idType(Lexer *lexer) {
       }
 
       break;
+
+    case 'm':
+      return checkKeyword(lexer, 1, 4, "atch", TOK_MATCH);
 
     case 'n': 
       if (idLength > 1) {
@@ -369,6 +383,9 @@ Tok nextTok(Lexer *lexer) {
 
     case ']': 
       return makeTok(lexer, TOK_RBRACKET);
+
+    case '|':
+      return makeTok(lexer, TOK_PIPE);
 
     case ',': 
       return makeTok(lexer, TOK_COMMA);
