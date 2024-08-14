@@ -22,11 +22,8 @@ static void printStack(VM *vm) {
 }
 #endif
 
-VM newVM(Chunk *ch) {
-  VM vm = {
-    .ch = ch,
-    .ip = ch->code
-  };
+VM newVM() {
+  VM vm = { 0 };
 
   return vm;
 }
@@ -122,11 +119,23 @@ static Aftermath run(VM *vm) {
 #undef BIN_OP
 }
 
-Aftermath interpret(const char *src) {
-  IGNORE(run);
-  compile(src);
+Aftermath interpret(const char *fname, VM *vm, const char *src) {
+  Chunk ch = newChunk();
 
-  return AFTERMATH_OK;
+  if (!compile(fname, src, &ch)) {
+    freeChunk(&ch); 
+
+    return AFTERMATH_COMPILE_ERR;
+  }
+
+  vm->ch = &ch;
+  vm->ip = ch.code;
+
+  Aftermath aftermath = run(vm);
+
+  freeChunk(&ch);
+
+  return aftermath;
 }
 
 void push(VM *vm, Val val) {

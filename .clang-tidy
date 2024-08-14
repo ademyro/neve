@@ -7,5 +7,6 @@ Checks: >
   misc-*,
   portability-*,
   -readability-identifier-length,
-  -bugprone-easily-swappable-parameters
+  -bugprone-easily-swappable-parameters,
+  -misc-no-recursion
 WarningsAsErrors: '*'

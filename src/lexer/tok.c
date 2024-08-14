@@ -55,7 +55,11 @@ Tok newTok(const char *lexeme, const TokType type, Loc loc) {
   return tok;
 }
 
-char *copyLexeme(const Tok tok) {
+Tok emptyTok() {
+  return newTok("", TOK_EOF, newLoc());
+}
+
+char *copyLexeme(Tok tok) {
   const size_t length = (size_t)tok.loc.length;
 
   char *lexeme = malloc(length + 1);
