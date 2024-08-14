@@ -7,7 +7,12 @@
 typedef enum {
   ERR_CLI,
   ERR_SYNTAX,
-  ERR_INVALID_VALUE
+  ERR_INVALID_VALUE,
+  ERR_INFINITE_STR,
+  ERR_INVALID_CHAR,
+  ERR_INTEGER_OUT_OF_RANGE,
+  ERR_INVALID_EXPR,
+  ERR_OPEN_PARENS
 } Err;
 
 typedef struct {
@@ -18,9 +23,12 @@ typedef struct {
   RenderCtx ctx;
 
   Err err;
+
+  int errCount;
 } ErrMod;
 
 ErrMod newErrMod(const char *fname, const char *src);
+void setNewErr(ErrMod *mod, Err id, Loc loc);
 void setErrLoc(ErrMod *mod, Loc loc);
 void setErr(ErrMod *mod, Err id);
 

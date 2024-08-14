@@ -20,12 +20,12 @@ typedef enum {
   AFTERMATH_RUNTIME_ERR
 } Aftermath;
 
-VM newVM(Chunk *ch);
+VM newVM();
 void freeVM(VM *vm);
 
 void resetStack(VM *vm);
 
-Aftermath interpret(const char *src);
+Aftermath interpret(const char *fname, VM *vm, const char *src);
 
 void push(VM *vm, Val val);
 Val pop(VM *vm);

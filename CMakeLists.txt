@@ -4,8 +4,11 @@ project(neve) # VERSION 0.0.0-20211225
 add_executable(neve
   src/main/main.c
   src/compiler/compiler.c
+  src/compiler/ctx.c
   src/err/err.c
   src/err/render.c
+  src/ir/ir.c
+  src/ir/pretty.c
   src/lexer/tok.c
   src/lexer/lexer.c
   src/mem/mem.c
@@ -25,6 +28,7 @@ target_compile_options(neve PRIVATE
   -Wconversion
   -Werror
   -pedantic
+  -fopt-info
   -g
 )
 

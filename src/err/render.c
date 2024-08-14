@@ -52,7 +52,7 @@ static void writeFrom(const char *src, const int until) {
   int col = 1;
   const char *curr = src;
 
-  while (col <= until) {
+  while (col <= until && *curr != '\n') {
     fputc(*curr, stderr); 
     curr++;
     col++;
@@ -158,9 +158,9 @@ void highlightNote(RenderCtx ctx, const char *fmt, va_list args) {
 void highlightChange(Loc fixLoc, const char *fmt, va_list args) {
   size_t changeLength = (size_t)vsnprintf(NULL, 0, fmt, args);
 
-  const int newLineDigits = digitsIn(fixLoc.col);
+  const int newLineDigits = digitsIn(fixLoc.col) - 1;
   writef(BLUE "%*s |", newLineDigits, ""); 
-  writef("%*s" GREEN, fixLoc.col, "");
+  writef("%*s" GREEN, fixLoc.col + 1, "");
 
   highlight(changeLength, '+');
 
@@ -183,7 +183,7 @@ void renderModifiedLine(
 ) {
   int line = fixLoc.line;
   const char *lineStart = findLine(src, line);
-  int lineEnd = (int)strcspn(lineStart, "\n\0");
+  int lineEnd = (int)strcspn(lineStart, "\n\0") - 1;
 
   const int newLineDigits = digitsIn(line);
 
@@ -195,7 +195,10 @@ void renderModifiedLine(
   write(GREEN);
   vfprintf(stderr, fmt, args);
   write(RESET);
-  writeFrom(lineStart + col, lineEnd);
+
+  if (col < lineEnd) {
+    writeFrom(lineStart + col, lineEnd);
+  }
 
   endFormat();
 }
