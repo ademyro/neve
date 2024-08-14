@@ -178,6 +178,8 @@ static void emitConst(Ctx *ctx, Val val, Loc loc) {
 static void endCompiler(Ctx *ctx) {
   Tok curr = ctx->parser.curr;
 
+  freeTypeTable(ctx->types);
+
   emitReturn(ctx, curr.loc);
 
 #ifdef DEBUG_COMPILE

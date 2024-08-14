@@ -1,20 +1,19 @@
+#include <stdlib.h>
+
 #include "type.h"
 
-TypeTable newTypeTable() {
-  Type intType = {
-    .kind = TYPE_INT,
-    .name = "Int"
-  };
+TypeTable *allocTypeTable() {
+  Type *intType = malloc(sizeof (*intType));
+  intType->kind = TYPE_INT;
+  intType->name = "Int";
 
-  Type floatType = {
-    .kind = TYPE_FLOAT,
-    .name = "Float"
-  };
+  Type *floatType = malloc(sizeof (*floatType));
+  floatType->kind = TYPE_FLOAT;
+  floatType->name = "Float";
 
-  TypeTable table = {
-    .intType = intType,
-    .floatType = floatType
-  };
+  TypeTable *table = malloc(sizeof (*table));
+  table->intType = intType;
+  table->floatType = floatType;
 
   return table;
 }
@@ -23,11 +22,11 @@ bool getType(TypeTable *table, TypeKind kind, Type *t) {
   // we’ll definitely switch to a table
   switch (kind) {
     case TYPE_INT:
-      *t = table->intType;
+      *t = *table->intType;
       break;
 
     case TYPE_FLOAT:
-      *t = table->floatType;
+      *t = *table->floatType;
       break;
 
     default:
@@ -51,4 +50,21 @@ Type unknownType() {
   };
 
   return pending;
+}
+
+void freeTypeTable(TypeTable *table) {
+  table->intType->kind = TYPE_UNKNOWN;
+  table->floatType->kind = TYPE_UNKNOWN;
+
+  table->intType->name = NULL;
+  table->floatType->name = NULL;
+
+  free(table->intType);
+  free(table->floatType);
+
+  table->intType = NULL;
+  table->floatType = NULL;
+
+  free(table);
+  table = NULL;
 }
