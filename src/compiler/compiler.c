@@ -220,7 +220,7 @@ static Node *term(Ctx *ctx) {
     Node *right = factor(ctx);
 
     emit(ctx, op.type == TOK_PLUS ? OP_ADD : OP_SUB, op.loc);
-    Node *binOp = newBinOp(left, op, right);
+    Node *binOp = newBinOp(ctx->types, left, op, right);
     left = binOp; 
   }
 
@@ -236,7 +236,7 @@ static Node *factor(Ctx *ctx) {
     Node *right = unary(ctx);
 
     emit(ctx, op.type == TOK_STAR ? OP_MUL : OP_DIV, op.loc);
-    Node *binOp = newBinOp(left, op, right);
+    Node *binOp = newBinOp(ctx->types, left, op, right);
     left = binOp; 
   }
 
@@ -253,7 +253,7 @@ static Node *unary(Ctx *ctx) {
     // once it is, replace this with a ternary operator
     emit(ctx, OP_NEG, op.loc);
 
-    return newUnOp(op, operand);
+    return newUnOp(ctx->types, op, operand);
   }
 
   return primary(ctx);
@@ -295,7 +295,7 @@ static Node *primary(Ctx *ctx) {
 
   if (IS_PANICKING(ctx)) {
     // TODO: replace this with a `nil` node
-    return newInt(-1L, curr.loc);
+    return newInt(ctx->types, -1L, curr.loc);
   }
 
   markErr(ctx);
@@ -314,7 +314,7 @@ static Node *primary(Ctx *ctx) {
   endErr(mod);
 
   // TODO: replace this with a `nil` node
-  return newInt(-1L, curr.loc);
+  return newInt(ctx->types, -1L, curr.loc);
 }
 
 static Node *intLiteral(Ctx *ctx) {
@@ -347,7 +347,7 @@ static Node *intLiteral(Ctx *ctx) {
   }
 
   emitConst(ctx, (double)value, integer.loc);
-  return newInt(value, integer.loc);
+  return newInt(ctx->types, value, integer.loc);
 }
 
 static Node *floatLiteral(Ctx *ctx) {
@@ -356,7 +356,7 @@ static Node *floatLiteral(Ctx *ctx) {
   const double value = strtod(f.lexeme, NULL);
 
   emitConst(ctx, value, f.loc);
-  return newFloat(value, f.loc);
+  return newFloat(ctx->types, value, f.loc);
 }
 
 bool compile(const char *fname, const char *src, Chunk *ch) {

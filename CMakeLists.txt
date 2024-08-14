@@ -9,6 +9,7 @@ add_executable(neve
   src/err/render.c
   src/ir/ir.c
   src/ir/pretty.c
+  src/ir/type.c
   src/lexer/tok.c
   src/lexer/lexer.c
   src/mem/mem.c

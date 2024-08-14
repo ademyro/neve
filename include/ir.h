@@ -2,6 +2,7 @@
 #define IR_H
 
 #include "tok.h"
+#include "type.h"
 
 #define NODE_AS_INT(node) ((node)->as.i)
 #define NODE_AS_FLOAT(node) ((node)->as.f)
@@ -47,13 +48,18 @@ struct Node {
   } as;
 
   NodeType type;
+  Type valType;
 };
 
-Node *newInt(long value, Loc loc);
-Node *newFloat(double value, Loc loc);
-Node *newUnOp(Tok op, Node *operand);
-Node *newBinOp(Node *left, Tok op, Node *right);
+Node *newInt(TypeTable *table, long value, Loc loc);
+Node *newFloat(TypeTable *table, double value, Loc loc);
+Node *newUnOp(TypeTable *table, Tok op, Node *operand);
+Node *newBinOp(TypeTable *table, Node *left, Tok op, Node *right);
 
 void freeNode(Node *node);
+
+// we could keep this function in type.h instead, but that would just create 
+// some recursive dependencies.
+Type inferType(TypeTable *table, Node *node);
 
 #endif
