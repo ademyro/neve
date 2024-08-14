@@ -5,11 +5,11 @@
 #include "err.h"
 #include "vm.h"
 
-static const char *readFile(const char *filename) {
-  FILE *f = fopen(filename, "rb");
+static const char *readFile(const char *fname) {
+  FILE *f = fopen(fname, "rb");
 
   if (f == NULL) {
-    cliErr("%s: file not found", filename);
+    cliErr("%s: file not found", fname);
     exit(1);
   }
 
@@ -20,7 +20,7 @@ static const char *readFile(const char *filename) {
   char *buf = malloc(size + 1);
 
   if (buf == NULL) {
-    cliErr("not enough memory available to read %s", filename);
+    cliErr("not enough memory available to read %s", fname);
 
     exit(1);
   }
@@ -28,7 +28,7 @@ static const char *readFile(const char *filename) {
   size_t end = fread(buf, sizeof (char), size, f);
 
   if (end < size) {
-    cliErr("%s: couldn't read the full file", filename);
+    cliErr("%s: couldn't read the full file", fname);
     cliErr("this is most likely because a call to fread() failed.");
 
     exit(1);
@@ -46,7 +46,9 @@ static void repl() {
   const size_t lim = 1024;
   char line[lim];
 
+  VM vm = newVM();
   while (true) {
+    resetStack(&vm);
     printf("? ");
 
     if (!fgets(line, (int)lim, stdin)) {
@@ -54,20 +56,25 @@ static void repl() {
       break;
     }
 
-    interpret(line);
+    interpret("repl", &vm, line);
   }
+
+  freeVM(&vm);
 }
 
-static void runFile(const char *filename) {
-  const char *src = readFile(filename);
+static void runFile(const char *fname) {
+  VM vm = newVM();
+  resetStack(&vm);
 
-  Aftermath aftermath = interpret(src); 
+  const char *src = readFile(fname);
+
+  Aftermath aftermath = interpret(fname, &vm, src); 
+
+  free((char *)src);
   
   if (aftermath != AFTERMATH_OK) {
     exit(1);
   }
-
-  free((char *)src);
 }
 
 int main(const int argc, const char **argv) {

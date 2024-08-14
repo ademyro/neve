@@ -16,6 +16,13 @@ ErrMod newErrMod(const char *fname, const char *src) {
   return mod;
 }
 
+void setNewErr(ErrMod *mod, Err id, Loc loc) {
+  setErrLoc(mod, loc);
+  setErr(mod, id);
+  
+  mod->errCount++;
+}
+
 void setErrLoc(ErrMod *mod, Loc loc) {
   mod->loc = loc;
   mod->ctx = newRenderCtx(loc);

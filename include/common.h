@@ -8,5 +8,6 @@
 #define IGNORE(x) (void)(x)
 
 #define DEBUG_EXEC
+#define DEBUG_COMPILE
 
 #endif
