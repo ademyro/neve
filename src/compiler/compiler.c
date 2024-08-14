@@ -111,7 +111,7 @@ void expect(Ctx *ctx, TokType type, const char *tokName) {
 
   showOffendingLine(
     mod, 
-    "expected %s, but found %.*s", 
+    "expected %s, but found ‘%.*s’", 
     tokName, 
     SHOW_LEXEME(curr)
   );
@@ -294,7 +294,7 @@ static Node *primary(Ctx *ctx) {
   Tok curr = offendingTok(ctx);
 
   if (IS_PANICKING(ctx)) {
-  // TODO: replace this with a `nil` node
+    // TODO: replace this with a `nil` node
     return newInt(-1L, curr.loc);
   }
 
@@ -371,10 +371,10 @@ bool compile(const char *fname, const char *src, Chunk *ch) {
 
   ErrMod newMod = ctx.errMod;
 
-  fprintf(stderr, "compiled with %d errors\n", newMod.errCount);
+  const bool hadErrs = newMod.errCount != 0;
 
 #ifdef DEBUG_COMPILE
-  if (newMod.errCount == 0) {
+  if (!hadErrs) {
     prettyPrint(ast);
   }
 #endif
@@ -383,5 +383,9 @@ bool compile(const char *fname, const char *src, Chunk *ch) {
 
   endCompiler(&ctx);
 
-  return ctx.errMod.errCount == 0;
+  if (hadErrs) {
+    cliErr("compilation failed due to %d previous errors", newMod.errCount);
+  }
+
+  return !hadErrs;
 }

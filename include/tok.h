@@ -3,7 +3,7 @@
 
 #include "common.h"
 
-#define SHOW_LEXEME(tok) ((int)(tok).loc.length), ((tok).lexeme)
+#define SHOW_LEXEME(tok) (int)((tok).loc.length), ((tok).lexeme)
 
 typedef struct {
   int line;
@@ -56,7 +56,5 @@ Tok newTok(const char *lexeme, TokType type, Loc loc);
 Tok emptyTok();
 
 char *copyLexeme(Tok tok);
-
-const char *showTok(Tok tok);
 
 #endif

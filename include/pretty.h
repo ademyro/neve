@@ -7,7 +7,6 @@ typedef struct {
   int indentation;
 } PrettyPrinter;
 
-// temporary.
 void prettyPrint(Node *node);
 
 #endif
