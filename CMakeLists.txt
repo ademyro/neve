@@ -5,6 +5,8 @@ add_executable(neve
   src/main/main.c
   src/compiler/compiler.c
   src/compiler/ctx.c
+  src/compiler/emit.c
+  src/compiler/opt.c
   src/err/err.c
   src/err/render.c
   src/ir/ir.c

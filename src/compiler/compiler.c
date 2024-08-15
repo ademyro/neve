@@ -4,7 +4,9 @@
 
 #include "compiler.h"
 #include "ctx.h"
+#include "emit.h"
 #include "err.h"
+#include "opt.h"
 #include "pretty.h"
 #include "tok.h"
 #include "ir.h"
@@ -23,10 +25,6 @@ Parser newParser() {
   };
 
   return parser;
-}
-
-static Chunk *currChunk(Ctx *ctx) {
-  return ctx->currCh;
 }
 
 static void markErr(Ctx *ctx) {
@@ -158,23 +156,6 @@ static bool match(Ctx *ctx, TokType type) {
   return true;
 }
 
-static void emit(Ctx *ctx, uint8_t byte, Loc loc) {
-  writeChunk(currChunk(ctx), byte, loc.line);
-}
-
-static void emitBoth(Ctx *ctx, uint8_t one, uint8_t two, Loc loc) {
-  emit(ctx, one, loc);
-  emit(ctx, two, loc);
-}
-
-static void emitReturn(Ctx *ctx, Loc loc) {
-  emit(ctx, OP_RET, loc);
-}
-
-static void emitConst(Ctx *ctx, Val val, Loc loc) {
-  writeConst(currChunk(ctx), val, loc.line);
-}
-
 static void endCompiler(Ctx *ctx) {
   Tok curr = ctx->parser.curr;
 
@@ -221,7 +202,6 @@ static Node *term(Ctx *ctx) {
 
     Node *right = factor(ctx);
 
-    emit(ctx, op.type == TOK_PLUS ? OP_ADD : OP_SUB, op.loc);
     Node *binOp = newBinOp(ctx->types, left, op, right);
     left = binOp; 
   }
@@ -237,7 +217,6 @@ static Node *factor(Ctx *ctx) {
 
     Node *right = unary(ctx);
 
-    emit(ctx, op.type == TOK_STAR ? OP_MUL : OP_DIV, op.loc);
     Node *binOp = newBinOp(ctx->types, left, op, right);
     left = binOp; 
   }
@@ -250,10 +229,6 @@ static Node *unary(Ctx *ctx) {
     Tok op = consume(ctx); 
 
     Node *operand = unary(ctx);
-
-    // TODO: unary boolean negation is not supported yet,
-    // once it is, replace this with a ternary operator
-    emit(ctx, OP_NEG, op.loc);
 
     return newUnOp(ctx->types, op, operand);
   }
@@ -348,7 +323,6 @@ static Node *intLiteral(Ctx *ctx) {
     endErr(mod);
   }
 
-  emitConst(ctx, (double)value, integer.loc);
   return newInt(ctx->types, value, integer.loc);
 }
 
@@ -357,7 +331,6 @@ static Node *floatLiteral(Ctx *ctx) {
 
   const double value = strtod(f.lexeme, NULL);
 
-  emitConst(ctx, value, f.loc);
   return newFloat(ctx->types, value, f.loc);
 }
 
@@ -377,9 +350,21 @@ bool compile(const char *fname, const char *src, Chunk *ch) {
 
 #ifdef DEBUG_COMPILE
   if (!hadErrs) {
+    fprintf(stderr, "unoptimized:\n");
     prettyPrint(ast);
   }
 #endif
+
+  optNode(ast);
+
+#ifdef DEBUG_COMPILE
+  if (!hadErrs) {
+    fprintf(stderr, "optimized:\n");
+    prettyPrint(ast);
+  }
+#endif
+
+  emitNode(&ctx, ast);
 
   freeNode(ast);
 

@@ -83,7 +83,7 @@ Node *newFloat(TypeTable *table, double value, Loc loc) {
   Node *node = malloc(sizeof (*node));
   node->type = NODE_FLOAT;
   node->valType = unknownType();
-  node->valType = *table->floatType;
+  node->valType = *table->intType;
 
   node->as.f = f;
 
