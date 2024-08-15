@@ -63,10 +63,12 @@ void showOffendingLine(ErrMod mod, const char *fmt, ...) {
   va_end(args);
 }
 
-void showNote(ErrMod mod, const char *fmt, ...) {
+void showNote(ErrMod mod, Loc loc, const char *fmt, ...) {
   va_list args;
 
-  renderLine(mod.ctx, mod.src);
+  mod.ctx.loc = loc;
+
+  renderRegularLine(mod.ctx, mod.src);
 
   va_start(args, fmt); 
 

@@ -223,3 +223,29 @@ void renderFmtLine(RenderCtx ctx, const char *fmt, va_list args) {
   endFormat();
   writeEmptyPipe(ctx.lineDigits);
 }
+
+void renderRegularLine(RenderCtx ctx, const char *src) {
+  Loc loc = ctx.loc;
+
+  const int line = loc.line;
+  const char *lineStart = findLine(src, line);
+  const int lineEnd = (int)strcspn(lineStart, "\n");
+
+  writeLinePipes(ctx.lineDigits, loc.line);
+
+  int col = loc.col - 1;
+  int errEnd = col + (int)loc.length;
+
+  if (lineStart == NULL) {
+    write(RED "could not find line");
+  }
+
+  writeFrom(lineStart, col);
+  write(BLUE);
+  writeFrom(lineStart + col, (int)loc.length);
+  write(RESET);
+  writeFrom(lineStart + errEnd, lineEnd - errEnd);
+
+  endFormat();
+}
+

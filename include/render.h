@@ -25,6 +25,7 @@ void renderLocus(RenderCtx ctx, const char *fname);
 void renderLine(RenderCtx ctx, const char *src);
 void renderHint(RenderCtx ctx, const char *fmt, va_list args);
 void renderFmtLine(RenderCtx ctx, const char *fmt, va_list args);
+void renderRegularLine(RenderCtx ctx, const char *src);
 
 void highlightErr(RenderCtx ctx, const char *fmt, va_list args);
 void highlightNote(RenderCtx ctx, const char *fmt, va_list args);
@@ -35,6 +36,7 @@ void renderModifiedLine(
   const char *fmt, 
   va_list args
 );
+
 
 void renderFix(Loc fixLoc, const char *fmt, va_list args);
 void highlightChange(Loc fixLoc, const char *fmt, va_list args);

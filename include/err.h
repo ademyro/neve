@@ -12,7 +12,8 @@ typedef enum {
   ERR_INVALID_CHAR,
   ERR_INTEGER_OUT_OF_RANGE,
   ERR_INVALID_EXPR,
-  ERR_OPEN_PARENS
+  ERR_OPEN_PARENS,
+  ERR_UNAPPLICABLE_OP
 } Err;
 
 typedef struct {
@@ -37,7 +38,7 @@ void cliErr(const char *fmt, ...);
 void reportErr(ErrMod mod, const char *fmt, ...);
 
 void showOffendingLine(ErrMod mod, const char *fmt, ...);
-void showNote(ErrMod mod, const char *fmt, ...);
+void showNote(ErrMod mod, Loc loc, const char *fmt, ...);
 void showHint(ErrMod mod, const char *fmt, ...);
 
 void suggestFix(ErrMod mod, Loc fixLoc, const char *fmt, ...);

@@ -203,7 +203,7 @@ static TokType checkForN(Lexer *lexer) {
     case 'i':
       return checkKeyword(lexer, 2, 1, "l", TOK_NIL);
 
-    case 'n':
+    case 'o':
       return checkKeyword(lexer, 2, 1, "t", TOK_NOT);
   }
 
@@ -279,6 +279,9 @@ static TokType idType(Lexer *lexer) {
 
     case 'r': 
       return checkKeyword(lexer, 1, returnLength - 1, "eturn", TOK_RETURN);
+
+    case 't':
+      return checkKeyword(lexer, 1, 3, "rue", TOK_TRUE);
 
     case 'v': 
       return checkKeyword(lexer, 1, 2, "ar", TOK_VAR);
