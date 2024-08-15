@@ -19,7 +19,7 @@ Loc mergeLocs(Loc left, Loc right) {
 
   const int col = (int)fmin(left.col, right.col);
 
-  const size_t length = (size_t)abs(left.col - right.col);
+  const size_t length = (size_t)abs(left.col - right.col) + right.length;
 
   const Loc loc = { 
     .line = line, 

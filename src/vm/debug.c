@@ -60,15 +60,27 @@ size_t disasmInstr(Chunk *ch, size_t offset) {
   switch (instr) {
     case OP_RET:
       return simpleInstr("ret", offset);
-    
+
     case OP_CONST_LONG:
       return longConstInstr("pushl", ch, offset);
     
     case OP_CONST:
       return constInstr("push", ch, offset);
+
+    case OP_TRUE:
+      return simpleInstr("true", offset);
+
+    case OP_FALSE:
+      return simpleInstr("false", offset);
+
+    case OP_NIL:
+      return simpleInstr("nil", offset);
     
     case OP_NEG:
       return simpleInstr("neg", offset);
+
+    case OP_NOT:
+      return simpleInstr("not", offset);
 
     case OP_ADD:
       return simpleInstr("add", offset);
@@ -81,6 +93,24 @@ size_t disasmInstr(Chunk *ch, size_t offset) {
 
     case OP_DIV:
       return simpleInstr("div", offset);
+
+    case OP_EQ:
+      return simpleInstr("eq", offset);
+
+    case OP_NEQ:
+      return simpleInstr("neq", offset);
+    
+    case OP_GREATER:
+      return simpleInstr("gt", offset);
+
+    case OP_LESS:
+      return simpleInstr("lt", offset);
+
+    case OP_GREATER_EQ:
+      return simpleInstr("gte", offset);
+
+    case OP_LESS_EQ:
+      return simpleInstr("lte", offset);
 
     default:
       printf("unknown instr %u\n", instr);

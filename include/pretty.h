@@ -1,5 +1,5 @@
-#ifndef NEVE_PRETTY_H
-#define NEVE_PRETTY_H
+#ifndef PRETTY_H
+#define PRETTY_H
 
 #include "ir.h"
 

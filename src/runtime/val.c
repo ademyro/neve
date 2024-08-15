@@ -38,5 +38,36 @@ void freeValArr(ValArr *arr) {
 }
 
 void printVal(Val val) {
-  printf("%g", val);
+  switch (val.type) {
+    case VAL_BOOL:
+      printf(VAL_AS_BOOL(val) ? "true" : "false");
+      break;
+
+    case VAL_NIL:
+      printf("nil");
+      break;
+    
+    case VAL_NUM:
+      printf("%g", VAL_AS_NUM(val));
+      break;
+  }
+}
+
+bool valsEq(Val a, Val b) {
+  if (a.type != b.type) {
+    return false;
+  }
+
+  switch (a.type) {
+    case VAL_NIL:
+      return true;
+
+    case VAL_BOOL:
+      return VAL_AS_BOOL(a) && VAL_AS_BOOL(b);
+
+    case VAL_NUM:
+      return VAL_AS_NUM(a) == VAL_AS_NUM(b);
+  }
+
+  return false;
 }
