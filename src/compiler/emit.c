@@ -7,6 +7,8 @@ static void emitBinOp(Ctx *ctx, BinOp binOp) {
 
   const Tok op = binOp.op;
 
+  // TODO: make this a table sometime and use it like this:
+  // uint8_t opcode = binOpTable[op.type - TOK_PLUS];
   switch (op.type) {
     case TOK_PLUS:
       emit(ctx, OP_ADD, op.loc);
@@ -24,6 +26,30 @@ static void emitBinOp(Ctx *ctx, BinOp binOp) {
       emit(ctx, OP_DIV, op.loc);
       break;
 
+    case TOK_EQUAL:
+      emit(ctx, OP_EQ, op.loc);
+      break;
+
+    case TOK_NEQUAL:
+      emit(ctx, OP_NEQ, op.loc);
+      break;
+
+    case TOK_GREATER:
+      emit(ctx, OP_GREATER, op.loc);
+      break;
+
+    case TOK_LESS:
+      emit(ctx, OP_LESS, op.loc);
+      break;
+
+    case TOK_GREATER_EQUAL:
+      emit(ctx, OP_GREATER_EQ, op.loc);
+      break;
+
+    case TOK_LESS_EQUAL:
+      emit(ctx, OP_LESS_EQ, op.loc);
+      break;
+
     default:
       // shouldn’t ever happen 
       break;
@@ -38,6 +64,11 @@ static void emitUnOp(Ctx *ctx, UnOp unOp) {
   switch (op.type) {
     case TOK_MINUS:
       emit(ctx, OP_NEG, op.loc);
+      break;
+    
+    case TOK_NOT:
+      emit(ctx, OP_NOT, op.loc);
+      break;
 
     default:
       // will add more with time
@@ -79,7 +110,7 @@ void emitNode(Ctx *ctx, Node *node) {
     case NODE_INT: {
       Int i = NODE_AS_INT(node);
 
-      Val val = (double)i.value;
+      Val val = NUM_VAL((double)i.value);
       emitConst(ctx, val, i.loc);
       break;
     }
@@ -87,9 +118,25 @@ void emitNode(Ctx *ctx, Node *node) {
     case NODE_FLOAT: {
       Float f = NODE_AS_FLOAT(node);
       
-      Val val = (double)f.value;
+      Val val = NUM_VAL(f.value);
       emitConst(ctx, val, f.loc);
       break;
     }
+    
+    case NODE_BOOL: {
+      Bool b = NODE_AS_BOOL(node);
+
+      Val val = BOOL_VAL(b.value);
+      emitConst(ctx, val, b.loc);
+      break;
+    }
+
+    case NODE_NIL: {
+      Loc loc = NODE_AS_NIL(node);
+      
+      emitConst(ctx, NIL_VAL, loc);
+      break;
+    }
+
   }
 }

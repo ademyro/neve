@@ -53,7 +53,7 @@ static Type inferBinOp(TypeTable *table, BinOp node) {
       return *table->floatType;
 
     default:
-      break;
+      return *table->boolType;
   }
 
   return unknownType();
@@ -86,6 +86,33 @@ Node *newFloat(TypeTable *table, double value, Loc loc) {
   node->valType = *table->floatType;
 
   node->as.f = f;
+
+  return node;
+}
+
+Node *newBool(TypeTable *table, bool value, Loc loc) {
+  Bool b = {
+    .value = value,
+    .loc = loc
+  };
+
+  Node *node = malloc(sizeof (*node));
+  node->type = NODE_BOOL;
+  node->valType = unknownType();
+  node->valType = *table->boolType;
+
+  node->as.b = b;
+
+  return node;
+}
+
+Node *newNil(TypeTable *table, Loc loc) {
+  Node *node = malloc(sizeof (*node));
+  node->type = NODE_NIL;
+  node->valType = unknownType();
+  node->valType = *table->nilType;
+
+  node->as.nilLoc = loc;
 
   return node;
 }
@@ -161,6 +188,12 @@ Type inferType(TypeTable *table, Node *node) {
     case NODE_FLOAT:
       return *table->floatType;
 
+    case NODE_BOOL:
+      return *table->boolType;
+
+    case NODE_NIL:
+      return *table->nilType;
+
     case NODE_UNOP:
       return inferUnOp(table, NODE_AS_UNOP(node));
 
@@ -169,5 +202,58 @@ Type inferType(TypeTable *table, Node *node) {
 
     default:
       return unknownType();
+  }
+}
+
+bool checkType(Node *node, TypeKind kind) {
+  return node->valType.kind == kind;
+}
+
+bool isNum(Node *node) {
+  return checkType(node, TYPE_FLOAT) || checkType(node, TYPE_INT);
+}
+
+Loc getLoc(Node *node) {
+  switch (node->type) {
+    case NODE_BINOP:
+      return NODE_AS_BINOP(node).op.loc;
+
+    case NODE_UNOP:
+      return NODE_AS_UNOP(node).op.loc;
+
+    case NODE_INT:
+      return NODE_AS_INT(node).loc;
+
+    case NODE_FLOAT:
+      return NODE_AS_FLOAT(node).loc;
+
+    case NODE_BOOL:
+      return NODE_AS_BOOL(node).loc;
+
+    case NODE_NIL:
+      return NODE_AS_NIL(node);
+  }
+
+  return newLoc();
+}
+
+Loc getFullLoc(Node *node) {
+  switch (node->type) {
+    case NODE_BINOP: {
+      BinOp binOp = NODE_AS_BINOP(node);
+      return mergeLocs(
+        mergeLocs(getFullLoc(binOp.left), binOp.op.loc),
+        getFullLoc(binOp.right)
+      );
+    }
+
+    case NODE_UNOP: {
+      UnOp unOp = NODE_AS_UNOP(node);
+
+      return mergeLocs(unOp.op.loc, getFullLoc(unOp.operand));
+    }
+    
+    default:
+      return getLoc(node);
   }
 }

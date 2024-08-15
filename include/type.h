@@ -6,7 +6,9 @@
 typedef enum {
   TYPE_UNKNOWN,
   TYPE_INT,
-  TYPE_FLOAT
+  TYPE_FLOAT,
+  TYPE_BOOL,
+  TYPE_NIL
 } TypeKind;
 
 typedef struct {
@@ -25,6 +27,8 @@ typedef struct {
   // replace this whole thing with a table once we can
   Type *intType;
   Type *floatType;
+  Type *boolType;
+  Type *nilType;
 } TypeTable;
 
 TypeTable *allocTypeTable();

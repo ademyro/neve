@@ -58,6 +58,10 @@ static void printFloat(Float f) {
   write("Float %lf", f.value); 
 }
 
+static void printBool(Bool b) {
+  write("Bool %s", b.value ? "true" : "false");
+}
+
 static void printNode(PrettyPrinter *printer, Node *node) {
   switch (node->type) {
     case NODE_BINOP:
@@ -74,6 +78,14 @@ static void printNode(PrettyPrinter *printer, Node *node) {
 
     case NODE_FLOAT:
       printFloat(NODE_AS_FLOAT(node));
+      break;
+    
+    case NODE_BOOL:
+      printBool(NODE_AS_BOOL(node));
+      break;
+    
+    case NODE_NIL:
+      write("Nil");
       break;
 
     default:

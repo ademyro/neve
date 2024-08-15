@@ -41,12 +41,12 @@ void resetStack(VM *vm) {
 static Aftermath run(VM *vm) {
 #define READ_BYTE() (*vm->ip++)
 #define READ_CONST() (vm->ch->consts.consts[READ_BYTE()])
-#define BIN_OP(op)                                              \
+#define BIN_OP(valType, op)                                     \
   do {                                                          \
-    double b = pop(vm);                                         \
-    double a = pop(vm);                                         \
+    double b = VAL_AS_NUM(pop(vm));                             \
+    double a = VAL_AS_NUM(pop(vm));                             \
                                                                 \
-    push(vm, a op b);                                           \
+    push(vm, valType(a op b));                                  \
   } while (false)
 
   while (true) {
@@ -83,24 +83,75 @@ static Aftermath run(VM *vm) {
         break;
       }
 
+      case OP_TRUE:
+        push(vm, BOOL_VAL(true));
+        break;
+
+      case OP_FALSE:
+        push(vm, BOOL_VAL(false));
+        break;
+
+      case OP_NIL:
+        push(vm, NIL_VAL);
+        break;
+
       case OP_NEG:
-        vm->stackTop[-1] = -vm->stackTop[-1];
+        vm->stackTop[-1] = NUM_VAL(-VAL_AS_NUM(vm->stackTop[-1]));
+        break;
+
+      case OP_NOT:
+        vm->stackTop[-1] = BOOL_VAL(
+          IS_VAL_NIL(vm->stackTop[-1]) || 
+          (IS_VAL_BOOL(vm->stackTop[-1]) && !VAL_AS_BOOL(vm->stackTop[-1]))
+        );
         break;
 
       case OP_ADD:
-        BIN_OP(+);
+        BIN_OP(NUM_VAL, +);
         break;
 
       case OP_SUB:
-        BIN_OP(-);
+        BIN_OP(NUM_VAL, -);
         break;
 
       case OP_MUL:
-        BIN_OP(*);
+        BIN_OP(NUM_VAL, *);
         break;
 
       case OP_DIV:
-        BIN_OP(/);
+        BIN_OP(NUM_VAL, /);
+        break;
+      
+      case OP_EQ: {
+        Val b = pop(vm);
+        Val a = pop(vm);
+
+        push(vm, BOOL_VAL(valsEq(a, b)));
+        break;
+      }
+
+      case OP_NEQ: {
+        Val b = pop(vm);
+        Val a = pop(vm);
+
+        push(vm, BOOL_VAL(!valsEq(a, b)));
+        break;
+      }
+
+      case OP_GREATER:
+        BIN_OP(BOOL_VAL, >);
+        break;
+
+      case OP_LESS:
+        BIN_OP(BOOL_VAL, <);
+        break;
+
+      case OP_GREATER_EQ:
+        BIN_OP(BOOL_VAL, >=);
+        break;
+
+      case OP_LESS_EQ:
+        BIN_OP(BOOL_VAL, <=);
         break;
 
       case OP_RET:

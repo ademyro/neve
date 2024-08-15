@@ -59,6 +59,82 @@ static void unexpectedToken(Ctx *ctx, Tok tok) {
   }
 }
 
+static void unaryNegationErr(Ctx *ctx, Tok op, Tok tok, Node *operand) {
+  CHECK_PANIC(ctx);
+  markErr(ctx);
+
+  Loc loc = mergeLocs(op.loc, tok.loc);
+
+  setNewErr(&ctx->errMod, ERR_UNAPPLICABLE_OP, loc);
+  ErrMod mod = ctx->errMod;
+
+  reportErr(
+    mod, 
+    "cannot negate ‘%.*s’ of type ‘%s’", 
+    SHOW_LEXEME(tok), 
+    operand->valType.name
+  );
+
+  showOffendingLine(mod, "can’t negate ‘%.*s’", SHOW_LEXEME(tok));
+
+  showHint(
+    mod, 
+    "you need to overload the unary ‘%.*s’ operator to apply it",
+    SHOW_LEXEME(op)
+  );
+
+  endErr(mod);
+}
+
+static void binOpTypeErr(Ctx *ctx, Node *left, Tok op, Node *right) {
+  CHECK_PANIC(ctx);
+  markErr(ctx);
+
+  Loc leftLoc = getFullLoc(left);
+  Loc rightLoc = getFullLoc(right);
+  Loc loc = op.loc;
+
+  setNewErr(&ctx->errMod, ERR_UNAPPLICABLE_OP, loc); 
+  ErrMod mod = ctx->errMod;
+  
+  // yeah this is kind of silly but
+  const char *actionName;
+  switch (op.type) {
+    case TOK_PLUS:
+      actionName = "sum";
+      break;
+    
+    case TOK_MINUS:
+      actionName = "subtract";
+      break;
+    
+    case TOK_STAR:
+      actionName = "multiply";
+      break;
+
+    case TOK_SLASH:
+      actionName = "divide";
+      break;
+
+    default:
+      actionName = "compare";
+      break;
+  }
+
+  reportErr(
+    mod, 
+    "cannot %s ‘%s’ and ‘%s’", 
+    actionName, 
+    left->valType.name, 
+    right->valType.name
+  );
+
+  showNote(mod, leftLoc, "%s", left->valType.name);
+  showNote(mod, rightLoc, "%s", right->valType.name);
+
+  endErr(mod);
+}
+
 static void advance(Ctx *ctx) {
   Parser *parser = &ctx->parser;
   parser->prev = parser->curr;
@@ -185,13 +261,40 @@ static Node *expr(Ctx *ctx) {
 }
 
 static Node *equality(Ctx *ctx) {
-  // not implemented yet
-  return comparison(ctx); 
+  Node *left = comparison(ctx); 
+
+  while (checkEither(ctx, TOK_EQUAL, TOK_NEQUAL)) {
+    Tok op = consume(ctx);
+
+    Node *right = comparison(ctx);
+
+    Node *binOp = newBinOp(ctx->types, left, op, right);
+    left = binOp; 
+  }
+
+  return left;
 }
 
 static Node *comparison(Ctx *ctx) {
-  // not implemented yet
-  return term(ctx);
+  Node *left = term(ctx); 
+
+  while (
+    checkEither(ctx, TOK_LESS, TOK_GREATER) ||
+    checkEither(ctx, TOK_LESS_EQUAL, TOK_GREATER_EQUAL)
+  ) {
+    Tok op = consume(ctx);
+
+    Node *right = term(ctx);
+
+    if (!isNum(left) || !isNum(right)) {
+      binOpTypeErr(ctx, left, op, right);
+    }
+
+    Node *binOp = newBinOp(ctx->types, left, op, right);
+    left = binOp; 
+  }
+
+  return left;
 }
 
 static Node *term(Ctx *ctx) {
@@ -201,6 +304,10 @@ static Node *term(Ctx *ctx) {
     Tok op = consume(ctx);
 
     Node *right = factor(ctx);
+
+    if (!isNum(left) || !isNum(right)) {
+      binOpTypeErr(ctx, left, op, right);
+    }
 
     Node *binOp = newBinOp(ctx->types, left, op, right);
     left = binOp; 
@@ -217,6 +324,10 @@ static Node *factor(Ctx *ctx) {
 
     Node *right = unary(ctx);
 
+    if (!isNum(left) || !isNum(right)) {
+      binOpTypeErr(ctx, left, op, right);
+    }
+
     Node *binOp = newBinOp(ctx->types, left, op, right);
     left = binOp; 
   }
@@ -225,24 +336,62 @@ static Node *factor(Ctx *ctx) {
 }
 
 static Node *unary(Ctx *ctx) {
-  if (checkEither(ctx, TOK_NOT, TOK_MINUS)) {
-    Tok op = consume(ctx); 
-
-    Node *operand = unary(ctx);
-
-    return newUnOp(ctx->types, op, operand);
+  if (!checkEither(ctx, TOK_MINUS, TOK_NOT)) {
+    return primary(ctx);
   }
 
-  return primary(ctx);
+  Tok op = consume(ctx); 
+  Node *operand = unary(ctx);
+
+  switch (op.type) {
+    case TOK_MINUS: {
+      // TODO: make this more robust once we implement classes--
+      // allow for operator overloading and replace this check
+      if (!isNum(operand)) {
+        Tok tok = ctx->parser.prev;
+
+        unaryNegationErr(ctx, op, tok, operand);
+      }
+
+      return newUnOp(ctx->types, op, operand);
+    }
+    
+    case TOK_NOT: {
+      if (!checkType(operand, TYPE_BOOL) && !checkType(operand, TYPE_NIL)) {
+        Tok tok = ctx->parser.prev;
+
+        unaryNegationErr(ctx, op, tok, operand);
+      }
+
+      return newUnOp(ctx->types, op, operand);
+    }
+
+    default:
+      return primary(ctx);
+  }
 }
 
 static Node *primary(Ctx *ctx) {
+  // TODO: make this a switch the moment we add one more if 
+  // statement
   if (check(ctx, TOK_INT)) {
     return intLiteral(ctx);
   }
 
   if (check(ctx, TOK_FLOAT)) {
     return floatLiteral(ctx);
+  }
+
+  if (checkEither(ctx, TOK_TRUE, TOK_FALSE)) {
+    Tok tok = consume(ctx);
+    
+    return newBool(ctx->types, tok.type == TOK_TRUE, tok.loc);
+  }
+
+  if (check(ctx, TOK_NIL)) {
+    Tok tok = consume(ctx);
+
+    return newNil(ctx->types, tok.loc);
   }
 
   if (match(ctx, TOK_LPAREN)) {
