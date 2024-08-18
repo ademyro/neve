@@ -112,6 +112,21 @@ size_t disasmInstr(Chunk *ch, size_t offset) {
     case OP_DIV:
       return simpleInstr("div", offset);
 
+    case OP_SHL:
+      return simpleInstr("shl", offset);
+
+    case OP_SHR:
+      return simpleInstr("shr", offset);
+    
+    case OP_BIT_AND:
+      return simpleInstr("band", offset);
+
+    case OP_BIT_XOR:
+      return simpleInstr("xor", offset);
+
+    case OP_BIT_OR:
+      return simpleInstr("bor", offset);
+
     case OP_EQ:
       return simpleInstr("eq", offset);
 

@@ -52,6 +52,13 @@ static Type inferBinOp(TypeTable *table, BinOp node) {
     case TOK_SLASH:
       return *table->floatType;
 
+    case TOK_SHL:
+    case TOK_SHR:
+    case TOK_BIT_AND:
+    case TOK_BIT_XOR:
+    case TOK_PIPE:
+      return *table->intType;
+
     default:
       return *table->boolType;
   }

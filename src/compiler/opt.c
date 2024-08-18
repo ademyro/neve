@@ -103,6 +103,26 @@ static void constFoldInt(Node *node) {
       result = leftValue / rightValue;
       break;
 
+    case TOK_SHL:
+      result = leftValue << rightValue;
+      break;
+
+    case TOK_SHR:
+      result = leftValue >> rightValue;
+      break;
+
+    case TOK_BIT_AND:
+      result = leftValue & rightValue;
+      break;
+
+    case TOK_BIT_XOR:
+      result = leftValue ^ rightValue;
+      break;
+
+    case TOK_PIPE:
+      result = leftValue | rightValue;
+      break;
+
     default:
       // this shouldn’t ever happen; but the compiler complains
       // if there’s no default case
@@ -179,6 +199,24 @@ static void constFoldBool(Node *node) {
   Node *right = binOp->right;
 
   if (op.type == TOK_EQUAL || op.type == TOK_NEQUAL) {
+    if (
+      !isNum(node) &&
+      !typesMatch(left->valType, right->valType)
+    ) {
+      node->type = NODE_BOOL;
+
+      Bool falseNode = {
+        .value = false,
+        .loc = binOp->op.loc
+      };
+
+      freeNode(left);
+      freeNode(right);
+
+      node->as.b = falseNode;
+      return;
+    }
+
     if (getTypeKind(left) == TYPE_NIL) {
       freeNode(left);
       freeNode(right);
@@ -383,24 +421,6 @@ void optBinOp(Node *node) {
 
   optNode(left);
   optNode(right);
-
-  if (
-    !isNum(node) &&
-    !typesMatch(left->valType, right->valType)
-  ) {
-    node->type = NODE_BOOL;
-
-    Bool falseNode = {
-      .value = false,
-      .loc = binOp->op.loc
-    };
-
-    freeNode(left);
-    freeNode(right);
-
-    node->as.b = falseNode;
-    return;
-  }
 
   if (isFoldable(binOp->left) && isFoldable(binOp->right)) {
     constFold(node);

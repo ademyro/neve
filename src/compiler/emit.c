@@ -1,59 +1,22 @@
 #include "emit.h"
 #include "chunk.h"
 
+static uint8_t binOpTable[] = {
+  OP_ADD, OP_SUB, OP_MUL, OP_DIV,
+  OP_SHL, OP_SHR, OP_BIT_AND, OP_BIT_XOR,
+  OP_BIT_OR, OP_EQ, OP_NEQ, OP_GREATER, 
+  OP_LESS, OP_GREATER_EQ, OP_LESS_EQ
+};
+
 static void emitBinOp(Ctx *ctx, BinOp binOp) {
   emitNode(ctx, binOp.left);
   emitNode(ctx, binOp.right);
 
   const Tok op = binOp.op;
 
-  // TODO: make this a table sometime and use it like this:
-  // uint8_t opcode = binOpTable[op.type - TOK_PLUS];
-  switch (op.type) {
-    case TOK_PLUS:
-      emit(ctx, OP_ADD, op.loc);
-      break;
+  uint8_t opcode = binOpTable[op.type - TOK_PLUS];
 
-    case TOK_MINUS:
-      emit(ctx, OP_SUB, op.loc);
-      break;
-
-    case TOK_STAR:
-      emit(ctx, OP_MUL, op.loc);
-      break;
-
-    case TOK_SLASH:
-      emit(ctx, OP_DIV, op.loc);
-      break;
-
-    case TOK_EQUAL:
-      emit(ctx, OP_EQ, op.loc);
-      break;
-
-    case TOK_NEQUAL:
-      emit(ctx, OP_NEQ, op.loc);
-      break;
-
-    case TOK_GREATER:
-      emit(ctx, OP_GREATER, op.loc);
-      break;
-
-    case TOK_LESS:
-      emit(ctx, OP_LESS, op.loc);
-      break;
-
-    case TOK_GREATER_EQUAL:
-      emit(ctx, OP_GREATER_EQ, op.loc);
-      break;
-
-    case TOK_LESS_EQUAL:
-      emit(ctx, OP_LESS_EQ, op.loc);
-      break;
-
-    default:
-      // shouldn’t ever happen 
-      break;
-  }
+  emit(ctx, opcode, op.loc);
 }
 
 static void emitUnOp(Ctx *ctx, UnOp unOp) {

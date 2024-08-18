@@ -48,6 +48,13 @@ static Aftermath run(VM *vm) {
                                                                 \
     push(vm, valType(a op b));                                  \
   } while (false)
+#define BIT_OP(op)                                              \
+  do {                                                          \
+    int b = (int)VAL_AS_NUM(pop(vm));                           \
+    int a = (int)VAL_AS_NUM(pop(vm));                           \
+                                                                \
+    push(vm, NUM_VAL(a op b));                                  \
+  } while (false)
 
   while (true) {
 #ifdef DEBUG_EXEC
@@ -142,7 +149,27 @@ static Aftermath run(VM *vm) {
       case OP_DIV:
         BIN_OP(NUM_VAL, /);
         break;
-      
+
+      case OP_SHL:
+        BIT_OP(<<);
+        break;
+
+      case OP_SHR:
+        BIT_OP(>>);
+        break;
+
+      case OP_BIT_AND:
+        BIT_OP(&);
+        break;
+
+      case OP_BIT_XOR:
+        BIT_OP(^);
+        break;
+
+      case OP_BIT_OR:
+        BIT_OP(|);
+        break;
+
       case OP_EQ: {
         Val b = pop(vm);
         Val a = pop(vm);
@@ -189,6 +216,7 @@ static Aftermath run(VM *vm) {
 #undef READ_BYTE
 #undef READ_CONST
 #undef BIN_OP
+#undef BIT_OP
 }
 
 Aftermath interpret(const char *fname, VM *vm, const char *src) {
