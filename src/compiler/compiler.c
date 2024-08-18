@@ -353,7 +353,7 @@ static Node *unary(Ctx *ctx) {
         unaryNegationErr(ctx, op, tok, operand);
       }
 
-      return newUnOp(ctx->types, op, operand);
+      return newUnOp(ctx->types, op, UNOP_NEG, operand);
     }
     
     case TOK_NOT: {
@@ -363,7 +363,7 @@ static Node *unary(Ctx *ctx) {
         unaryNegationErr(ctx, op, tok, operand);
       }
 
-      return newUnOp(ctx->types, op, operand);
+      return newUnOp(ctx->types, op, UNOP_NEG, operand);
     }
 
     default:

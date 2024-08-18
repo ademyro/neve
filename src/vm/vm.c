@@ -100,10 +100,19 @@ static Aftermath run(VM *vm) {
         break;
 
       case OP_NOT:
-        vm->stackTop[-1] = BOOL_VAL(
-          IS_VAL_NIL(vm->stackTop[-1]) || 
-          (IS_VAL_BOOL(vm->stackTop[-1]) && !VAL_AS_BOOL(vm->stackTop[-1]))
-        );
+        vm->stackTop[-1] = BOOL_VAL(!VAL_AS_BOOL(vm->stackTop[-1]));
+        break;
+
+      case OP_IS_NIL:
+        vm->stackTop[-1] = BOOL_VAL(!IS_VAL_NIL(vm->stackTop[-1]));
+        break;
+
+      case OP_IS_ZERO:
+        vm->stackTop[-1] = BOOL_VAL(VAL_AS_NUM(vm->stackTop[-1]) == 0);
+        break;
+
+      case OP_IS_NEG_ONE:
+        vm->stackTop[-1] = BOOL_VAL(VAL_AS_NUM(vm->stackTop[-1]) == -1);
         break;
 
       case OP_ADD:

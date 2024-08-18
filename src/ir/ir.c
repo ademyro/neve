@@ -117,9 +117,10 @@ Node *newNil(TypeTable *table, Loc loc) {
   return node;
 }
 
-Node *newUnOp(TypeTable *table, Tok op, Node *operand) {
+Node *newUnOp(TypeTable *table, Tok op, UnOpType opType, Node *operand) {
   UnOp unOp = {
     .op = op,
+    .opType = opType,
     .operand = operand
   };
 

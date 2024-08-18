@@ -59,19 +59,35 @@ static void emitBinOp(Ctx *ctx, BinOp binOp) {
 static void emitUnOp(Ctx *ctx, UnOp unOp) {
   emitNode(ctx, unOp.operand); 
 
-  const Tok op = unOp.op;
+  Loc loc = unOp.op.loc;
+  const UnOpType op = unOp.opType;
 
-  switch (op.type) {
-    case TOK_MINUS:
-      emit(ctx, OP_NEG, op.loc);
+  switch (op) {
+    case UNOP_NEG:
+      emit(ctx, OP_NEG, loc);
       break;
     
-    case TOK_NOT:
-      emit(ctx, OP_NOT, op.loc);
+    case UNOP_NOT:
+      emit(ctx, OP_NOT, loc);
       break;
 
     default:
-      // will add more with time
+      // yeah this is pretty silly
+      if (op & UNOP_IS_NIL) {
+        emit(ctx, OP_IS_NIL, loc);
+      }
+
+      if (op & UNOP_IS_ZERO) {
+        emit(ctx, OP_IS_ZERO, loc);
+      }
+
+      if (op & UNOP_IS_NEG_ONE) {
+        emit(ctx, OP_IS_NEG_ONE, loc);
+      }
+
+      if (op & UNOP_NEG) {
+        emit(ctx, OP_NEG, loc);
+      }
       break;
   }
 }

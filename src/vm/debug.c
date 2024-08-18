@@ -82,6 +82,15 @@ size_t disasmInstr(Chunk *ch, size_t offset) {
     case OP_NOT:
       return simpleInstr("not", offset);
 
+    case OP_IS_NIL:
+      return simpleInstr("isnil", offset);
+
+    case OP_IS_ZERO:
+      return simpleInstr("isz", offset);
+    
+    case OP_IS_NEG_ONE:
+      return simpleInstr("isneg1", offset);
+
     case OP_ADD:
       return simpleInstr("add", offset);
 

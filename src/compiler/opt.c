@@ -1,6 +1,6 @@
 #include "opt.h"
 
-static bool isConst(Node *node) {
+static inline bool isConst(Node *node) {
   return (
     node->type == NODE_INT    ||
     node->type == NODE_FLOAT  ||
@@ -9,19 +9,23 @@ static bool isConst(Node *node) {
   );
 }
 
-static bool isFoldable(Node *node) {
+static inline bool isFoldable(Node *node) {
   return (
     isConst(node)           ||
     node->type == NODE_UNOP
   );
 }
 
-static bool isUnOp(Node *node) {
+static inline bool isUnOp(Node *node) {
   return node->type == NODE_UNOP;
 }
 
-static TypeKind getTypeKind(Node *node) {
+static inline TypeKind getTypeKind(Node *node) {
   return node->valType.kind;
+}
+
+static inline bool eitherAre(Node *a, Node *b, TypeKind kind) {
+  return getTypeKind(a) == kind || getTypeKind(b) == kind;
 }
 
 static double getUnOpValue(Node *node);
@@ -65,6 +69,11 @@ static bool getBoolValue(Node *node) {
   }
 
   return NODE_AS_BOOL(node).value;
+}
+
+// please always check if both a and b are numbers before using this function
+static inline bool eitherNumsEq(Node *a, Node *b, double value) {
+  return getNumberValue(a) == value || getNumberValue(b) == value;
 }
 
 static void constFoldInt(Node *node) {
@@ -170,21 +179,6 @@ static void constFoldBool(Node *node) {
   Node *right = binOp->right;
 
   if (op.type == TOK_EQUAL || op.type == TOK_NEQUAL) {
-    if (!typesMatch(left->valType, right->valType)) {
-      freeNode(left);
-      freeNode(right);
-
-      node->type = NODE_BOOL;
-
-      Bool result = {
-        .value = false,
-        .loc = op.loc
-      };
-
-      node->as.b = result;
-      return;
-    }
-
     if (getTypeKind(left) == TYPE_NIL) {
       freeNode(left);
       freeNode(right);
@@ -303,6 +297,63 @@ static void constFold(Node *node) {
   }
 }
 
+static void eqSpecialization(Node *node) {
+  BinOp binOp = NODE_AS_BINOP(node);
+  
+  Tok op = binOp.op;
+
+  Node *left = binOp.left;
+  Node *right = binOp.right;
+
+  const bool isNeg = op.type == TOK_NEQUAL;
+
+  if (eitherAre(left, right, TYPE_NIL)) {
+    const bool isLeft = getTypeKind(left) == TYPE_NIL;
+
+    node->type = NODE_UNOP;
+
+    UnOp unOp = {
+      .op = binOp.op,
+      .opType = UNOP_IS_NIL | (isNeg && UNOP_NEG),
+      .operand = isLeft ? left : right
+    };
+
+    freeNode(isLeft ? right : left);
+
+    node->as.unOp = unOp;
+    return;
+  }
+
+  // we can assume that left and right have the same type
+  // because we always do a typesMatch() check in optBinOp()
+  if (!isNum(left)) {
+    return;
+  }
+
+  if (eitherNumsEq(left, right, 0.0F) || eitherNumsEq(left, right, -1.0F)) {
+    const double leftValue = getNumberValue(left);
+
+    // the edge case where the binOp looks like this:
+    // -1 == 0
+    // is impossible because it would’ve been constant folded earlier,
+    // and so we’d be left with a ( Bool false ) node.
+    const bool isLeft = leftValue == 0.0F || leftValue == -1.0F;
+    const bool isZero = leftValue == 0.0F;
+
+    node->type = NODE_UNOP;
+
+    UnOp unOp = {
+      .op = binOp.op,
+      .opType = (isZero ? UNOP_IS_ZERO : UNOP_IS_NEG_ONE) | isNeg && UNOP_NEG,
+      .operand = isLeft ? left : right
+    };
+
+    freeNode(isLeft ? right : left);
+
+    node->as.unOp = unOp;
+  }    
+}
+
 void optNode(Node *node) {
   switch (node->type) {
     case NODE_BINOP:
@@ -325,12 +376,43 @@ void optBinOp(Node *node) {
   // TODO: implement unary canonicalization
   BinOp *binOp = &NODE_AS_BINOP(node);
 
-  optNode(binOp->left);
-  optNode(binOp->right);
+  Tok op = binOp->op;
+
+  Node *left = binOp->left;
+  Node *right = binOp->right;
+
+  optNode(left);
+  optNode(right);
+
+  if (
+    !isNum(node) &&
+    !typesMatch(left->valType, right->valType)
+  ) {
+    node->type = NODE_BOOL;
+
+    Bool falseNode = {
+      .value = false,
+      .loc = binOp->op.loc
+    };
+
+    freeNode(left);
+    freeNode(right);
+
+    node->as.b = falseNode;
+    return;
+  }
 
   if (isFoldable(binOp->left) && isFoldable(binOp->right)) {
     constFold(node);
   } 
+
+  if (node->type != NODE_BINOP) {
+    return;
+  }
+
+  if (op.type == TOK_EQUAL || op.type == TOK_NEQUAL) {
+    eqSpecialization(node);
+  }
 }
 
 void optUnOp(Node *node) {
