@@ -49,10 +49,10 @@ static void repl() {
   VM vm = newVM();
   while (true) {
     resetStack(&vm);
-    printf("? ");
+    fputs("? ", stdout);
 
     if (!fgets(line, (int)lim, stdin)) {
-      printf("\n");
+      fputs("\n", stdout);
       break;
     }
 

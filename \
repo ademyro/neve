@@ -1,5 +1,7 @@
 #include "opt.h"
 
+#include <stdio.h>
+
 static inline bool isConst(Node *node) {
   return (
     node->type == NODE_INT    ||
@@ -199,6 +201,24 @@ static void constFoldBool(Node *node) {
   Node *right = binOp->right;
 
   if (op.type == TOK_EQUAL || op.type == TOK_NEQUAL) {
+    if (
+      !isNum(node) &&
+      !typesMatch(left->valType, right->valType)
+    ) {
+      node->type = NODE_BOOL;
+
+      Bool falseNode = {
+        .value = op.type == TOK_NEQUAL,
+        .loc = op.loc
+      };
+
+      freeNode(left);
+      freeNode(right);
+
+      node->as.b = falseNode;
+      return;
+    }
+
     if (getTypeKind(left) == TYPE_NIL) {
       freeNode(left);
       freeNode(right);
@@ -345,8 +365,7 @@ static void eqSpecialization(Node *node) {
   }
 
   // we can assume that left and right have the same type
-  // because checking equality on two different types results in
-  // a compiler error
+  // because we always do a typesMatch() check before getting here
   if (!isNum(left)) {
     return;
   }

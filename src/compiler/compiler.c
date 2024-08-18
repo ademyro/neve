@@ -348,6 +348,10 @@ static Node *equality(Ctx *ctx) {
 
     Node *right = comparison(ctx);
 
+    if (!typesMatch(left->valType, right->valType)) {
+      binOpTypeErr(ctx, left, op, right);
+    }
+
     Node *binOp = newBinOp(ctx->types, left, op, right);
     left = binOp; 
   }
@@ -596,23 +600,18 @@ bool compile(const char *fname, const char *src, Chunk *ch) {
 
   const bool hadErrs = newMod.errCount != 0;
 
-#ifdef DEBUG_COMPILE
   if (!hadErrs) {
+#ifdef DEBUG_COMPILE
     fprintf(stderr, "unoptimized:\n");
     prettyPrint(ast);
-  }
 #endif
-
-  optNode(ast);
-
+    optNode(ast);
 #ifdef DEBUG_COMPILE
-  if (!hadErrs) {
     fprintf(stderr, "optimized:\n");
     prettyPrint(ast);
-  }
 #endif
-
-  emitNode(&ctx, ast);
+    emitNode(&ctx, ast);
+  }
 
   freeNode(ast);
 
