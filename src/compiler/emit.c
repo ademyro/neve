@@ -136,8 +136,7 @@ void emitNode(Ctx *ctx, Node *node) {
     case NODE_BOOL: {
       Bool b = NODE_AS_BOOL(node);
 
-      Val val = BOOL_VAL(b.value);
-      emitConst(ctx, val, b.loc);
+      emit(ctx, b.value ? OP_TRUE : OP_FALSE, b.loc);
       break;
     }
 
