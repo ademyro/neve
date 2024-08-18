@@ -199,24 +199,6 @@ static void constFoldBool(Node *node) {
   Node *right = binOp->right;
 
   if (op.type == TOK_EQUAL || op.type == TOK_NEQUAL) {
-    if (
-      !isNum(node) &&
-      !typesMatch(left->valType, right->valType)
-    ) {
-      node->type = NODE_BOOL;
-
-      Bool falseNode = {
-        .value = false,
-        .loc = binOp->op.loc
-      };
-
-      freeNode(left);
-      freeNode(right);
-
-      node->as.b = falseNode;
-      return;
-    }
-
     if (getTypeKind(left) == TYPE_NIL) {
       freeNode(left);
       freeNode(right);
@@ -343,6 +325,24 @@ static void eqSpecialization(Node *node) {
   Node *left = binOp.left;
   Node *right = binOp.right;
 
+  if (
+    !isNum(node) &&
+    !typesMatch(left->valType, right->valType)
+  ) {
+    node->type = NODE_BOOL;
+
+    Bool falseNode = {
+      .value = false,
+      .loc = op.loc
+    };
+
+    freeNode(left);
+    freeNode(right);
+
+    node->as.b = falseNode;
+    return;
+  }
+
   const bool isNeg = op.type == TOK_NEQUAL;
 
   if (eitherAre(left, right, TYPE_NIL)) {
@@ -363,7 +363,7 @@ static void eqSpecialization(Node *node) {
   }
 
   // we can assume that left and right have the same type
-  // because we always do a typesMatch() check in optBinOp()
+  // because we always do a typesMatch() check before getting here
   if (!isNum(left)) {
     return;
   }
@@ -378,18 +378,20 @@ static void eqSpecialization(Node *node) {
     const bool isLeft = leftValue == 0.0F || leftValue == -1.0F;
     const bool isZero = leftValue == 0.0F;
 
+    const UnOpType opType = isZero ? UNOP_IS_ZERO : UNOP_IS_NEG_ONE;
+
     node->type = NODE_UNOP;
 
     UnOp unOp = {
       .op = binOp.op,
-      .opType = (isZero ? UNOP_IS_ZERO : UNOP_IS_NEG_ONE) | isNeg && UNOP_NEG,
+      .opType = opType | isNeg && UNOP_NEG,
       .operand = isLeft ? left : right
     };
 
     freeNode(isLeft ? right : left);
 
     node->as.unOp = unOp;
-  }    
+  }
 }
 
 void optNode(Node *node) {
@@ -429,6 +431,8 @@ void optBinOp(Node *node) {
   if (node->type != NODE_BINOP) {
     return;
   }
+
+  // TODO: implement strength reduction once we have variables
 
   if (op.type == TOK_EQUAL || op.type == TOK_NEQUAL) {
     eqSpecialization(node);
