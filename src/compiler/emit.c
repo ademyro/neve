@@ -82,7 +82,7 @@ static void emitUnOp(Ctx *ctx, UnOp unOp) {
       }
 
       if (op & UNOP_IS_NEG_ONE) {
-        emit(ctx, OP_IS_NEG_ONE, loc);
+        emit(ctx, OP_IS_MINUS_ONE, loc);
       }
 
       if (op & UNOP_NEG) {
@@ -90,6 +90,45 @@ static void emitUnOp(Ctx *ctx, UnOp unOp) {
       }
       break;
   }
+}
+
+static void emitInt(Ctx *ctx, Int node) {
+  switch (node.value) {
+    case -1L:
+      emit(ctx, OP_MINUS_ONE, node.loc);
+      break;
+
+    case 0L:
+      emit(ctx, OP_ZERO, node.loc);
+      break;
+
+    case 1L:
+      emit(ctx, OP_ONE, node.loc);
+      break;
+
+    default:
+      emitConst(ctx, NUM_VAL((double)node.value), node.loc);
+      break;
+  }
+}
+
+static void emitFloat(Ctx *ctx, Float node) {
+  if (node.value == -1) {
+    emit(ctx, OP_MINUS_ONE, node.loc);
+    return;
+  }
+
+  if (node.value == 0) {
+    emit(ctx, OP_ZERO, node.loc);
+    return;
+  }
+
+  if (node.value == 1) {
+    emit(ctx, OP_ONE, node.loc);
+    return;
+  }
+
+  emitConst(ctx, NUM_VAL(node.value), node.loc);
 }
 
 Chunk *currChunk(Ctx *ctx) {
@@ -123,21 +162,13 @@ void emitNode(Ctx *ctx, Node *node) {
       emitUnOp(ctx, NODE_AS_UNOP(node));
       break;
 
-    case NODE_INT: {
-      Int i = NODE_AS_INT(node);
-
-      Val val = NUM_VAL((double)i.value);
-      emitConst(ctx, val, i.loc);
+    case NODE_INT:
+      emitInt(ctx, NODE_AS_INT(node));
       break;
-    }
     
-    case NODE_FLOAT: {
-      Float f = NODE_AS_FLOAT(node);
-      
-      Val val = NUM_VAL(f.value);
-      emitConst(ctx, val, f.loc);
+    case NODE_FLOAT:
+      emitFloat(ctx, NODE_AS_FLOAT(node));
       break;
-    }
     
     case NODE_BOOL: {
       Bool b = NODE_AS_BOOL(node);

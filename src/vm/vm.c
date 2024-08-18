@@ -95,6 +95,18 @@ static Aftermath run(VM *vm) {
         push(vm, NIL_VAL);
         break;
 
+      case OP_ZERO:
+        push(vm, NUM_VAL(0));
+        break;
+
+      case OP_ONE:
+        push(vm, NUM_VAL(1));
+        break;
+
+      case OP_MINUS_ONE:
+        push(vm, NUM_VAL(-1));
+        break;
+
       case OP_NEG:
         vm->stackTop[-1] = NUM_VAL(-VAL_AS_NUM(vm->stackTop[-1]));
         break;
@@ -111,7 +123,7 @@ static Aftermath run(VM *vm) {
         vm->stackTop[-1] = BOOL_VAL(VAL_AS_NUM(vm->stackTop[-1]) == 0);
         break;
 
-      case OP_IS_NEG_ONE:
+      case OP_IS_MINUS_ONE:
         vm->stackTop[-1] = BOOL_VAL(VAL_AS_NUM(vm->stackTop[-1]) == -1);
         break;
 
