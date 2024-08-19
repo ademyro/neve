@@ -8,7 +8,8 @@ typedef enum {
   TYPE_INT,
   TYPE_FLOAT,
   TYPE_BOOL,
-  TYPE_NIL
+  TYPE_NIL,
+  TYPE_STR
 } TypeKind;
 
 typedef struct {
@@ -29,12 +30,10 @@ typedef struct {
   Type *floatType;
   Type *boolType;
   Type *nilType;
+  Type *strType;
 } TypeTable;
 
 TypeTable *allocTypeTable();
-
-// future signature: bool getType(char *name, Type *t)
-bool getType(TypeTable *table, TypeKind kind, Type *t);
 
 bool typesMatch(Type a, Type b);
 bool isTypeKnown(Type t);
