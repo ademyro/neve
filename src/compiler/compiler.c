@@ -460,7 +460,7 @@ static Node *unary(Ctx *ctx) {
     }
     
     case TOK_NOT: {
-      if (!checkType(operand, TYPE_BOOL) && !checkType(operand, TYPE_NIL)) {
+      if (!checkType(operand, TYPE_BOOL)) {
         Tok tok = ctx->parser.prev;
 
         unaryNegationErr(ctx, op, tok, operand);

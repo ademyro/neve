@@ -24,6 +24,12 @@ static void freeBinOp(BinOp *node) {
 }
 
 static Type inferUnOp(TypeTable *table, UnOp node) {
+  Tok op = node.op;
+
+  if (op.type == TOK_NOT) {
+    return *table->boolType;
+  }
+
   return inferType(table, node.operand);
 }
 
