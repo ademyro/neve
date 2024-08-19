@@ -16,6 +16,7 @@ add_executable(neve
   src/lexer/lexer.c
   src/mem/mem.c
   src/runtime/val.c
+  src/runtime/obj.c
   src/vm/debug.c
   src/vm/chunk.c
   src/vm/vm.c

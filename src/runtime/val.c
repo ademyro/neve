@@ -1,7 +1,9 @@
 #include <stdio.h>
+#include <string.h>
 
 #include "mem.h"
 #include "val.h"
+#include "obj.h"
 
 ValArr newValArr() {
   ValArr arr = {
@@ -50,6 +52,10 @@ void printVal(Val val) {
     case VAL_NUM:
       printf("%g", VAL_AS_NUM(val));
       break;
+
+    case VAL_OBJ:
+      printObj(val);
+      break;
   }
 }
 
@@ -67,6 +73,16 @@ bool valsEq(Val a, Val b) {
 
     case VAL_NUM:
       return VAL_AS_NUM(a) == VAL_AS_NUM(b);
+
+    case VAL_OBJ: {
+      ObjStr *aStr = VAL_AS_STR(a);
+      ObjStr *bStr = VAL_AS_STR(b);
+
+      return (
+        aStr->length == bStr->length &&
+        memcmp(aStr->chars, bStr->chars, aStr->length) == 0
+      );
+    }
   }
 
   return false;
