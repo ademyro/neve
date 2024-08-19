@@ -405,6 +405,12 @@ Tok nextTok(Lexer *lexer) {
     case '*': 
       return makeTok(lexer, TOK_STAR); 
 
+    case '&':
+      return makeTok(lexer, TOK_BIT_AND);
+    
+    case '^':
+      return makeTok(lexer, TOK_BIT_XOR);
+
     case '!':
       return makeTok(
         lexer,
@@ -420,13 +426,15 @@ Tok nextTok(Lexer *lexer) {
     case '>':
       return makeTok(
         lexer,
-        match(lexer, '=') ? TOK_GREATER_EQUAL : TOK_GREATER
+        match(lexer, '=') ? TOK_GREATER_EQUAL : 
+        match(lexer, '>') ? TOK_SHR : TOK_GREATER
       );
 
     case '<':
       return makeTok(
         lexer,
-        match(lexer, '=') ? TOK_LESS_EQUAL : TOK_LESS
+        match(lexer, '=') ? TOK_LESS_EQUAL : 
+        match(lexer, '<') ? TOK_SHL : TOK_LESS
       );
 
     case '.':

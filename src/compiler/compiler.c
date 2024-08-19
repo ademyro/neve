@@ -116,6 +116,17 @@ static void binOpTypeErr(Ctx *ctx, Node *left, Tok op, Node *right) {
       actionName = "divide";
       break;
 
+    case TOK_SHL:
+    case TOK_SHR:
+      actionName = "shift";
+      break;
+    
+    case TOK_BIT_AND:
+    case TOK_PIPE:
+    case TOK_BIT_XOR:
+      actionName = "perform bitwise operation on";
+      break;
+    
     default:
       actionName = "compare";
       break;
@@ -247,8 +258,12 @@ static void endCompiler(Ctx *ctx) {
 }
 
 static Node *expr(Ctx *ctx);
+static Node *bitOr(Ctx *ctx);
+static Node *bitXor(Ctx *ctx);
+static Node *bitAnd(Ctx *ctx);
 static Node *equality(Ctx *ctx);
 static Node *comparison(Ctx *ctx);
+static Node *bitShift(Ctx *ctx);
 static Node *term(Ctx *ctx);
 static Node *factor(Ctx *ctx);
 static Node *unary(Ctx *ctx);
@@ -257,7 +272,72 @@ static Node *intLiteral(Ctx *ctx);
 static Node *floatLiteral(Ctx *ctx);
 
 static Node *expr(Ctx *ctx) {
-  return equality(ctx);
+  return bitOr(ctx);
+}
+
+static Node *bitOr(Ctx *ctx) {
+  Node *left = bitXor(ctx); 
+
+  while (check(ctx, TOK_PIPE)) {
+    Tok op = consume(ctx);
+
+    Node *right = bitXor(ctx);
+
+    // in the future, allow enum flag values.  still gotta determine a syntax
+    // for them.  a good candidate could be:
+    // enum Flags for &
+    //   ...
+    // end
+    // but that’s really unintuitive.  we’ll see--i’d like not to have to 
+    // introduce a specific ‘bitwise’ keyword.  and `enum X for &` has its
+    // charm, too.
+    if (!checkType(left, TYPE_INT) || !checkType(right, TYPE_INT)) {
+      binOpTypeErr(ctx, left, op, right);
+    }
+
+    Node *binOp = newBinOp(ctx->types, left, op, right);
+    left = binOp; 
+  }
+
+  return left;
+}
+
+static Node *bitXor(Ctx *ctx) {
+  Node *left = bitAnd(ctx); 
+
+  while (check(ctx, TOK_BIT_XOR)) {
+    Tok op = consume(ctx);
+
+    Node *right = bitAnd(ctx);
+
+    if (!checkType(left, TYPE_INT) || !checkType(right, TYPE_INT)) {
+      binOpTypeErr(ctx, left, op, right);
+    }
+
+    Node *binOp = newBinOp(ctx->types, left, op, right);
+    left = binOp; 
+  }
+
+  return left;
+}
+
+static Node *bitAnd(Ctx *ctx) {
+  Node *left = equality(ctx); 
+
+  while (check(ctx, TOK_BIT_AND)) {
+    Tok op = consume(ctx);
+
+    Node *right = equality(ctx);
+
+    if (!checkType(left, TYPE_INT) || !checkType(right, TYPE_INT)) {
+      binOpTypeErr(ctx, left, op, right);
+    }
+
+    Node *binOp = newBinOp(ctx->types, left, op, right);
+    left = binOp; 
+  }
+
+  return left;
 }
 
 static Node *equality(Ctx *ctx) {
@@ -268,6 +348,10 @@ static Node *equality(Ctx *ctx) {
 
     Node *right = comparison(ctx);
 
+    if (!typesMatch(left->valType, right->valType)) {
+      binOpTypeErr(ctx, left, op, right);
+    }
+
     Node *binOp = newBinOp(ctx->types, left, op, right);
     left = binOp; 
   }
@@ -276,7 +360,7 @@ static Node *equality(Ctx *ctx) {
 }
 
 static Node *comparison(Ctx *ctx) {
-  Node *left = term(ctx); 
+  Node *left = bitShift(ctx); 
 
   while (
     checkEither(ctx, TOK_LESS, TOK_GREATER) ||
@@ -284,9 +368,28 @@ static Node *comparison(Ctx *ctx) {
   ) {
     Tok op = consume(ctx);
 
-    Node *right = term(ctx);
+    Node *right = bitShift(ctx);
 
     if (!isNum(left) || !isNum(right)) {
+      binOpTypeErr(ctx, left, op, right);
+    }
+
+    Node *binOp = newBinOp(ctx->types, left, op, right);
+    left = binOp; 
+  }
+
+  return left;
+}
+
+static Node *bitShift(Ctx *ctx) {
+  Node *left = term(ctx); 
+
+  while (checkEither(ctx, TOK_SHL, TOK_SHR)) {
+    Tok op = consume(ctx);
+
+    Node *right = comparison(ctx);
+
+    if (!checkType(left, TYPE_INT) || !checkType(right, TYPE_INT)) {
       binOpTypeErr(ctx, left, op, right);
     }
 
@@ -353,17 +456,17 @@ static Node *unary(Ctx *ctx) {
         unaryNegationErr(ctx, op, tok, operand);
       }
 
-      return newUnOp(ctx->types, op, operand);
+      return newUnOp(ctx->types, op, UNOP_NEG, operand);
     }
     
     case TOK_NOT: {
-      if (!checkType(operand, TYPE_BOOL) && !checkType(operand, TYPE_NIL)) {
+      if (!checkType(operand, TYPE_BOOL)) {
         Tok tok = ctx->parser.prev;
 
         unaryNegationErr(ctx, op, tok, operand);
       }
 
-      return newUnOp(ctx->types, op, operand);
+      return newUnOp(ctx->types, op, UNOP_NOT, operand);
     }
 
     default:
@@ -497,23 +600,18 @@ bool compile(const char *fname, const char *src, Chunk *ch) {
 
   const bool hadErrs = newMod.errCount != 0;
 
-#ifdef DEBUG_COMPILE
   if (!hadErrs) {
+#ifdef DEBUG_COMPILE
     fprintf(stderr, "unoptimized:\n");
     prettyPrint(ast);
-  }
 #endif
-
-  optNode(ast);
-
+    optNode(ast);
 #ifdef DEBUG_COMPILE
-  if (!hadErrs) {
     fprintf(stderr, "optimized:\n");
     prettyPrint(ast);
-  }
 #endif
-
-  emitNode(&ctx, ast);
+    emitNode(&ctx, ast);
+  }
 
   freeNode(ast);
 
