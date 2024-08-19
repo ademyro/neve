@@ -334,7 +334,7 @@ static void eqSpecialization(Node *node) {
 
     UnOp unOp = {
       .op = binOp.op,
-      .opType = UNOP_IS_NIL | (isNeg && UNOP_NEG),
+      .opType = isNeg ? UNOP_IS_NIL : UNOP_IS_NIL | UNOP_NEG,
       .operand = isLeft ? left : right
     };
 
@@ -367,7 +367,7 @@ static void eqSpecialization(Node *node) {
 
     UnOp unOp = {
       .op = binOp.op,
-      .opType = opType | isNeg && UNOP_NEG,
+      .opType = isNeg ? opType : opType | UNOP_NEG,
       .operand = isLeft ? left : right
     };
 

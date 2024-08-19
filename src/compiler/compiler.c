@@ -466,7 +466,7 @@ static Node *unary(Ctx *ctx) {
         unaryNegationErr(ctx, op, tok, operand);
       }
 
-      return newUnOp(ctx->types, op, UNOP_NEG, operand);
+      return newUnOp(ctx->types, op, UNOP_NOT, operand);
     }
 
     default:
