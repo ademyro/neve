@@ -48,6 +48,13 @@ static Aftermath run(VM *vm) {
                                                                 \
     push(vm, valType(a op b));                                  \
   } while (false)
+#define BIT_OP(op)                                              \
+  do {                                                          \
+    int b = (int)VAL_AS_NUM(pop(vm));                           \
+    int a = (int)VAL_AS_NUM(pop(vm));                           \
+                                                                \
+    push(vm, NUM_VAL(a op b));                                  \
+  } while (false)
 
   while (true) {
 #ifdef DEBUG_EXEC
@@ -95,15 +102,36 @@ static Aftermath run(VM *vm) {
         push(vm, NIL_VAL);
         break;
 
+      case OP_ZERO:
+        push(vm, NUM_VAL(0));
+        break;
+
+      case OP_ONE:
+        push(vm, NUM_VAL(1));
+        break;
+
+      case OP_MINUS_ONE:
+        push(vm, NUM_VAL(-1));
+        break;
+
       case OP_NEG:
         vm->stackTop[-1] = NUM_VAL(-VAL_AS_NUM(vm->stackTop[-1]));
         break;
 
       case OP_NOT:
-        vm->stackTop[-1] = BOOL_VAL(
-          IS_VAL_NIL(vm->stackTop[-1]) || 
-          (IS_VAL_BOOL(vm->stackTop[-1]) && !VAL_AS_BOOL(vm->stackTop[-1]))
-        );
+        vm->stackTop[-1] = BOOL_VAL(!VAL_AS_BOOL(vm->stackTop[-1]));
+        break;
+
+      case OP_IS_NIL:
+        vm->stackTop[-1] = BOOL_VAL(!IS_VAL_NIL(vm->stackTop[-1]));
+        break;
+
+      case OP_IS_ZERO:
+        vm->stackTop[-1] = BOOL_VAL(VAL_AS_NUM(vm->stackTop[-1]) == 0);
+        break;
+
+      case OP_IS_MINUS_ONE:
+        vm->stackTop[-1] = BOOL_VAL(VAL_AS_NUM(vm->stackTop[-1]) == -1);
         break;
 
       case OP_ADD:
@@ -121,7 +149,27 @@ static Aftermath run(VM *vm) {
       case OP_DIV:
         BIN_OP(NUM_VAL, /);
         break;
-      
+
+      case OP_SHL:
+        BIT_OP(<<);
+        break;
+
+      case OP_SHR:
+        BIT_OP(>>);
+        break;
+
+      case OP_BIT_AND:
+        BIT_OP(&);
+        break;
+
+      case OP_BIT_XOR:
+        BIT_OP(^);
+        break;
+
+      case OP_BIT_OR:
+        BIT_OP(|);
+        break;
+
       case OP_EQ: {
         Val b = pop(vm);
         Val a = pop(vm);
@@ -168,6 +216,7 @@ static Aftermath run(VM *vm) {
 #undef READ_BYTE
 #undef READ_CONST
 #undef BIN_OP
+#undef BIT_OP
 }
 
 Aftermath interpret(const char *fname, VM *vm, const char *src) {

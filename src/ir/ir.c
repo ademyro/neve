@@ -24,6 +24,12 @@ static void freeBinOp(BinOp *node) {
 }
 
 static Type inferUnOp(TypeTable *table, UnOp node) {
+  Tok op = node.op;
+
+  if (op.type == TOK_NOT) {
+    return *table->boolType;
+  }
+
   return inferType(table, node.operand);
 }
 
@@ -51,6 +57,13 @@ static Type inferBinOp(TypeTable *table, BinOp node) {
 
     case TOK_SLASH:
       return *table->floatType;
+
+    case TOK_SHL:
+    case TOK_SHR:
+    case TOK_BIT_AND:
+    case TOK_BIT_XOR:
+    case TOK_PIPE:
+      return *table->intType;
 
     default:
       return *table->boolType;
@@ -117,9 +130,10 @@ Node *newNil(TypeTable *table, Loc loc) {
   return node;
 }
 
-Node *newUnOp(TypeTable *table, Tok op, Node *operand) {
+Node *newUnOp(TypeTable *table, Tok op, UnOpType opType, Node *operand) {
   UnOp unOp = {
     .op = op,
+    .opType = opType,
     .operand = operand
   };
 

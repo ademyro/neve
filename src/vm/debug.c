@@ -75,12 +75,30 @@ size_t disasmInstr(Chunk *ch, size_t offset) {
 
     case OP_NIL:
       return simpleInstr("nil", offset);
+
+    case OP_ZERO:
+      return simpleInstr("pushz", offset);
+
+    case OP_MINUS_ONE:
+      return simpleInstr("pushm1", offset);
+
+    case OP_ONE:
+      return simpleInstr("push1", offset);
     
     case OP_NEG:
       return simpleInstr("neg", offset);
 
     case OP_NOT:
       return simpleInstr("not", offset);
+
+    case OP_IS_NIL:
+      return simpleInstr("isnil", offset);
+
+    case OP_IS_ZERO:
+      return simpleInstr("isz", offset);
+    
+    case OP_IS_MINUS_ONE:
+      return simpleInstr("ism1", offset);
 
     case OP_ADD:
       return simpleInstr("add", offset);
@@ -93,6 +111,21 @@ size_t disasmInstr(Chunk *ch, size_t offset) {
 
     case OP_DIV:
       return simpleInstr("div", offset);
+
+    case OP_SHL:
+      return simpleInstr("shl", offset);
+
+    case OP_SHR:
+      return simpleInstr("shr", offset);
+    
+    case OP_BIT_AND:
+      return simpleInstr("band", offset);
+
+    case OP_BIT_XOR:
+      return simpleInstr("xor", offset);
+
+    case OP_BIT_OR:
+      return simpleInstr("bor", offset);
 
     case OP_EQ:
       return simpleInstr("eq", offset);
