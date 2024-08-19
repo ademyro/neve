@@ -1,5 +1,6 @@
-#include "emit.h"
 #include "chunk.h"
+#include "emit.h"
+#include "obj.h"
 
 static uint8_t binOpTable[] = {
   OP_ADD, OP_SUB, OP_MUL, OP_DIV,
@@ -94,6 +95,17 @@ static void emitFloat(Ctx *ctx, Float node) {
   emitConst(ctx, NUM_VAL(node.value), node.loc);
 }
 
+static void emitStr(Ctx *ctx, Str node) {
+  Tok tok = node.str;
+
+  const char *trimmedLexeme = tok.lexeme + 2;
+  const size_t trimmedLength = tok.loc.length - 2;
+
+  Val val = OBJ_VAL(copyStr(trimmedLexeme, trimmedLength));
+
+  emitConst(ctx, val, tok.loc);
+}
+
 Chunk *currChunk(Ctx *ctx) {
   return ctx->currCh;
 }
@@ -147,5 +159,9 @@ void emitNode(Ctx *ctx, Node *node) {
       break;
     }
 
+    case NODE_STR: {
+      emitStr(ctx, NODE_AS_STR(node));
+      break;
+    }
   }
 }

@@ -9,7 +9,7 @@ typedef struct ObjStr ObjStr;
 #define BOOL_VAL(val) ((Val){ VAL_BOOL, {.boolean = (val) } })
 #define NIL_VAL       ((Val){ VAL_NIL, { .num = 0 } })
 #define NUM_VAL(val)  ((Val){ VAL_NUM, { .num = (val) } })
-#define OBJ_VAL(obj)  ((Val){ VAL_OBJ, { .obj = (obj) } })
+#define OBJ_VAL(val)  ((Val){ VAL_OBJ, { .obj = (Obj *)(val) } })
 
 #define IS_VAL_BOOL(val)  ((val).type == VAL_BOOL)
 #define IS_VAL_NIL(val)   ((val).type == VAL_NIL)

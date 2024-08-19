@@ -3,9 +3,12 @@
 
 #include "common.h"
 
+#define ALLOC(type, size)                                   \
+  (type *)reallocate(NULL, 0, sizeof (type) * (size))
+
 #define GROW_CAP(cap) ((cap) < 8 ? 8 : (cap) * 2)
 #define GROW_ARR(type, ptr, oldSize, newSize)               \
-  (type *) reallocate(                                      \
+  (type *)reallocate(                                       \
     ptr,                                                    \
     sizeof (type) * (oldSize),                              \
     sizeof (type) * (newSize)                               \

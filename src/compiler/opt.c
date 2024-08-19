@@ -391,6 +391,7 @@ void optNode(Node *node) {
     case NODE_FLOAT:
     case NODE_BOOL:
     case NODE_NIL:
+    case NODE_STR:
       break;
   }
 }

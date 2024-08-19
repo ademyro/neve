@@ -268,8 +268,10 @@ static Node *term(Ctx *ctx);
 static Node *factor(Ctx *ctx);
 static Node *unary(Ctx *ctx);
 static Node *primary(Ctx *ctx);
+
 static Node *intLiteral(Ctx *ctx);
 static Node *floatLiteral(Ctx *ctx);
+static Node *grouping(Ctx *ctx);
 
 static Node *expr(Ctx *ctx) {
   return bitOr(ctx);
@@ -475,49 +477,32 @@ static Node *unary(Ctx *ctx) {
 }
 
 static Node *primary(Ctx *ctx) {
-  // TODO: make this a switch the moment we add one more if 
-  // statement
-  if (check(ctx, TOK_INT)) {
-    return intLiteral(ctx);
-  }
+  Tok tok = ctx->parser.curr;
 
-  if (check(ctx, TOK_FLOAT)) {
-    return floatLiteral(ctx);
-  }
+  switch (tok.type) {
+    case TOK_INT:
+      return intLiteral(ctx);
 
-  if (checkEither(ctx, TOK_TRUE, TOK_FALSE)) {
-    Tok tok = consume(ctx);
+    case TOK_FLOAT:
+      return floatLiteral(ctx);
+
+    case TOK_TRUE:
+    case TOK_FALSE:
+      advance(ctx);
+      return newBool(ctx->types, tok.type == TOK_TRUE, tok.loc);
+
+    case TOK_NIL:
+      advance(ctx);
+      return newNil(ctx->types, tok.loc);
+      
+    case TOK_LPAREN:
+      return grouping(ctx);
     
-    return newBool(ctx->types, tok.type == TOK_TRUE, tok.loc);
-  }
+    case TOK_STR:
+      return newStr(ctx->types, tok);
 
-  if (check(ctx, TOK_NIL)) {
-    Tok tok = consume(ctx);
-
-    return newNil(ctx->types, tok.loc);
-  }
-
-  if (match(ctx, TOK_LPAREN)) {
-    // TODO: maybe we’ll need a separate NODE_GROUPED variant
-    // for constant folding?
-    Node *grouped = expr(ctx);
-
-    if (!match(ctx, TOK_RPAREN) && !IS_PANICKING(ctx)) {
-      markErr(ctx);
-      Tok curr = offendingTok(ctx);
-
-      setNewErr(&ctx->errMod, ERR_OPEN_PARENS, curr.loc);
-      ErrMod mod = ctx->errMod;
-
-      reportErr(mod, "parentheses left open");
-      showOffendingLine(mod, "expected ‘)’ to close parentheses");
-      showHint(mod, "you can easily close them like so:");
-      suggestFix(mod, curr.loc, ")");
-
-      endErr(mod);
-    }
-
-    return grouped;
+    default:
+      break;
   }
 
   Tok curr = offendingTok(ctx);
@@ -542,8 +527,7 @@ static Node *primary(Ctx *ctx) {
 
   endErr(mod);
 
-  // TODO: replace this with a `nil` node
-  return newInt(ctx->types, -1L, curr.loc);
+  return newNil(ctx->types, curr.loc);
 }
 
 static Node *intLiteral(Ctx *ctx) {
@@ -584,6 +568,31 @@ static Node *floatLiteral(Ctx *ctx) {
   const double value = strtod(f.lexeme, NULL);
 
   return newFloat(ctx->types, value, f.loc);
+}
+
+static Node *grouping(Ctx *ctx) {
+  advance(ctx);
+
+  // TODO: maybe we’ll need a separate NODE_GROUPED variant
+  // for constant folding?
+  Node *grouped = expr(ctx);
+
+  if (!match(ctx, TOK_RPAREN) && !IS_PANICKING(ctx)) {
+    markErr(ctx);
+    Tok curr = offendingTok(ctx);
+
+    setNewErr(&ctx->errMod, ERR_OPEN_PARENS, curr.loc);
+    ErrMod mod = ctx->errMod;
+
+    reportErr(mod, "parentheses left open");
+    showOffendingLine(mod, "expected ‘)’ to close parentheses");
+    showHint(mod, "you can easily close them like so:");
+    suggestFix(mod, curr.loc, ")");
+
+    endErr(mod);
+  }
+
+  return grouped;
 }
 
 bool compile(const char *fname, const char *src, Chunk *ch) {

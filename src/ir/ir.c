@@ -130,6 +130,21 @@ Node *newNil(TypeTable *table, Loc loc) {
   return node;
 }
 
+Node *newStr(TypeTable *table, Tok tok) {
+  Str str = {
+    .str = tok,
+  };
+
+  Node *node = malloc(sizeof (*node));
+  node->type = NODE_STR;
+  node->valType = unknownType();
+  node->valType = *table->strType;
+
+  node->as.str = str;
+
+  return node;
+}
+
 Node *newUnOp(TypeTable *table, Tok op, UnOpType opType, Node *operand) {
   UnOp unOp = {
     .op = op,
@@ -246,6 +261,9 @@ Loc getLoc(Node *node) {
 
     case NODE_NIL:
       return NODE_AS_NIL(node);
+
+    case NODE_STR:
+      return NODE_AS_STR(node).str.loc;
   }
 
   return newLoc();

@@ -33,6 +33,8 @@ static inline bool isObjType(Val val, ObjType type) {
 }
 */
 
+ObjStr *copyStr(const char *chars, size_t length);
+
 void printObj(Val val);
 
 #endif
