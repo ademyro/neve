@@ -3,6 +3,7 @@
 
 #include "common.h"
 #include "val.h"
+#include "vm.h"
 
 #define OBJ_TYPE(val)     (VAL_AS_OBJ(val)->type)
 
@@ -15,6 +16,8 @@ typedef enum {
 
 struct Obj {
   ObjType type;
+
+  struct Obj *next;
 };
 
 struct ObjStr {
@@ -33,8 +36,11 @@ static inline bool isObjType(Val val, ObjType type) {
 }
 */
 
-ObjStr *copyStr(const char *chars, size_t length);
+ObjStr *takeStr(VM *vm, char *chars, size_t length);
+ObjStr *copyStr(VM *vm, const char *chars, size_t length);
 
 void printObj(Val val);
+
+void freeObj(Obj *obj);
 
 #endif

@@ -1,6 +1,7 @@
 #include <stdlib.h>
 
 #include "mem.h"
+#include "obj.h"
 
 void *reallocate(void *ptr, size_t oldSize, size_t newSize) {
   IGNORE(oldSize);
@@ -16,4 +17,15 @@ void *reallocate(void *ptr, size_t oldSize, size_t newSize) {
   }
 
   return allocated;
+}
+
+void freeObjs(Obj *objs) {
+  Obj *obj = objs;
+
+  while (obj != NULL) {
+    Obj *next = obj->next;
+
+    freeObj(obj);    
+    obj = next;
+  }
 }

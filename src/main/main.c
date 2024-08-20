@@ -71,7 +71,8 @@ static void runFile(const char *fname) {
   Aftermath aftermath = interpret(fname, &vm, src); 
 
   free((char *)src);
-  
+  freeVM(&vm);
+
   if (aftermath != AFTERMATH_OK) {
     exit(1);
   }

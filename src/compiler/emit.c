@@ -17,6 +17,15 @@ static void emitBinOp(Ctx *ctx, BinOp binOp) {
 
   uint8_t opcode = binOpTable[op.type - TOK_PLUS];
 
+  if (
+    opcode == OP_ADD &&
+    checkType(binOp.left, TYPE_STR) && 
+    checkType(binOp.right, TYPE_STR)
+  ) {
+    emit(ctx, OP_CONCAT, op.loc); 
+    return;
+  }
+
   emit(ctx, opcode, op.loc);
 }
 
@@ -98,10 +107,10 @@ static void emitFloat(Ctx *ctx, Float node) {
 static void emitStr(Ctx *ctx, Str node) {
   Tok tok = node.str;
 
-  const char *trimmedLexeme = tok.lexeme + 2;
+  const char *trimmedLexeme = tok.lexeme + 1;
   const size_t trimmedLength = tok.loc.length - 2;
 
-  Val val = OBJ_VAL(copyStr(trimmedLexeme, trimmedLength));
+  Val val = OBJ_VAL(copyStr(ctx->vm, trimmedLexeme, trimmedLength));
 
   emitConst(ctx, val, tok.loc);
 }

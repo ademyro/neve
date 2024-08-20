@@ -3,6 +3,7 @@
 
 #include "tok.h"
 #include "chunk.h"
+#include "vm.h"
 
 #define CHECK_PANIC(ctx)                                    \
   do {                                                      \
@@ -24,6 +25,6 @@ typedef struct {
 
 Parser newParser();
 
-bool compile(const char *fname, const char *src, Chunk *ch);
+bool compile(VM *vm, const char *fname, const char *src, Chunk *ch);
 
 #endif

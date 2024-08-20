@@ -112,6 +112,9 @@ size_t disasmInstr(Chunk *ch, size_t offset) {
     case OP_DIV:
       return simpleInstr("div", offset);
 
+    case OP_CONCAT:
+      return simpleInstr("concat", offset);
+
     case OP_SHL:
       return simpleInstr("shl", offset);
 

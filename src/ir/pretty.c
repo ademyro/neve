@@ -62,6 +62,12 @@ static void printBool(Bool b) {
   write("Bool %s", b.value ? "true" : "false");
 }
 
+static void printStr(Str s) {
+  Tok tok = s.str;
+  
+  write("Str %.*s", SHOW_LEXEME(tok));
+}
+
 static void printNode(PrettyPrinter *printer, Node *node) {
   switch (node->type) {
     case NODE_BINOP:
@@ -87,6 +93,9 @@ static void printNode(PrettyPrinter *printer, Node *node) {
     case NODE_NIL:
       write("Nil");
       break;
+
+    case NODE_STR:
+      printStr(NODE_AS_STR(node));
 
     default:
       break;

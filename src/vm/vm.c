@@ -1,7 +1,10 @@
 #include <stdio.h>
+#include <string.h>
 
 #include "common.h"
 #include "compiler.h"
+#include "mem.h"
+#include "obj.h"
 #include "vm.h"
 
 #ifdef DEBUG_EXEC
@@ -23,7 +26,9 @@ static void printStack(VM *vm) {
 #endif
 
 VM newVM() {
-  VM vm = { 0 };
+  VM vm = {
+    .objs = NULL
+  };
 
   return vm;
 }
@@ -31,7 +36,8 @@ VM newVM() {
 void freeVM(VM *vm) {
   IGNORE(vm);
 
-  // ...
+  freeObjs(vm->objs);
+  vm->objs = NULL;
 }
 
 void resetStack(VM *vm) {
@@ -150,6 +156,23 @@ static Aftermath run(VM *vm) {
         BIN_OP(NUM_VAL, /);
         break;
 
+      case OP_CONCAT: {
+        ObjStr *b = VAL_AS_STR(pop(vm));
+        ObjStr *a = VAL_AS_STR(pop(vm));
+
+        size_t length = a->length + b->length;
+
+        char *chars = ALLOC(char, length + 1);
+        memcpy(chars, a->chars, a->length);
+        memcpy(chars + a->length, b->chars, b->length);
+
+        chars[length] = '\0';
+
+        ObjStr *result = takeStr(vm, chars, length);
+        push(vm, OBJ_VAL(result));
+        break;
+      }
+
       case OP_SHL:
         BIT_OP(<<);
         break;
@@ -222,7 +245,7 @@ static Aftermath run(VM *vm) {
 Aftermath interpret(const char *fname, VM *vm, const char *src) {
   Chunk ch = newChunk();
 
-  if (!compile(fname, src, &ch)) {
+  if (!compile(vm, fname, src, &ch)) {
     freeChunk(&ch); 
 
     return AFTERMATH_COMPILE_ERR;

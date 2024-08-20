@@ -411,7 +411,12 @@ static Node *term(Ctx *ctx) {
     Node *right = factor(ctx);
 
     if (!isNum(left) || !isNum(right)) {
-      binOpTypeErr(ctx, left, op, right);
+      if (
+        op.type != TOK_PLUS && 
+        !checkType(left, TYPE_STR) && checkType(right, TYPE_STR)
+      ) {
+        binOpTypeErr(ctx, left, op, right);
+      }
     }
 
     Node *binOp = newBinOp(ctx->types, left, op, right);
@@ -499,6 +504,7 @@ static Node *primary(Ctx *ctx) {
       return grouping(ctx);
     
     case TOK_STR:
+      advance(ctx);
       return newStr(ctx->types, tok);
 
     default:
@@ -595,11 +601,11 @@ static Node *grouping(Ctx *ctx) {
   return grouped;
 }
 
-bool compile(const char *fname, const char *src, Chunk *ch) {
+bool compile(VM *vm, const char *fname, const char *src, Chunk *ch) {
   IGNORE(emitBoth);
 
   ErrMod mod = newErrMod(fname, src);
-  Ctx ctx = newCtx(mod, ch);
+  Ctx ctx = newCtx(vm, mod, ch);
 
   advance(&ctx);
   Node *ast = expr(&ctx);
