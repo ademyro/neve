@@ -12,6 +12,20 @@ static void freeFloat(Float *node) {
   node->loc = newLoc();
 }
 
+static void freeBool(Bool *node) {
+  node->value = false;
+  node->loc = newLoc();
+}
+
+static void freeStr(Str *node) {
+  if (node->ownsLexeme) {
+    free((char *)node->str.lexeme);
+  }
+
+  node->str = emptyTok();
+  node->ownsLexeme = false;
+}
+
 static void freeUnOp(UnOp *node) {
   node->op = emptyTok();
   freeNode(node->operand);
@@ -39,12 +53,16 @@ static Type inferBinOp(TypeTable *table, BinOp node) {
 
   switch (node.op.type) {
     case TOK_PLUS:
+      if (leftType.kind == TYPE_STR && rightType.kind == TYPE_STR) {
+        return *table->strType; 
+      }
+
+      __attribute__ ((fallthrough));
+      // else: fallthrough
+      // |
+      // v
     case TOK_MINUS:
     case TOK_STAR:
-      /* 
-      for TOK_PLUS:
-      if (leftType.kind == TYPE_STR || rightType.kind == TYPE_STR)
-      */
       if (typesMatch(leftType, rightType)) {
         return leftType;
       }
@@ -133,6 +151,7 @@ Node *newNil(TypeTable *table, Loc loc) {
 Node *newStr(TypeTable *table, Tok tok) {
   Str str = {
     .str = tok,
+    .ownsLexeme = false
   };
 
   Node *node = malloc(sizeof (*node));
@@ -188,6 +207,18 @@ void freeNode(Node *node) {
     case NODE_FLOAT:
       freeFloat(&NODE_AS_FLOAT(node));
       break;
+
+    case NODE_BOOL:
+      freeBool(&NODE_AS_BOOL(node));
+      break;
+    
+    case NODE_NIL:
+      node->as.nilLoc = newLoc();
+      break;
+
+    case NODE_STR:
+      freeStr(&NODE_AS_STR(node));
+      break;
     
     case NODE_UNOP:
       freeUnOp(&NODE_AS_UNOP(node));
@@ -195,9 +226,6 @@ void freeNode(Node *node) {
 
     case NODE_BINOP:
       freeBinOp(&NODE_AS_BINOP(node));
-      break;
-    
-    default:
       break;
   }
 

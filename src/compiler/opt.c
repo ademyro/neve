@@ -1,11 +1,16 @@
+#include <string.h>
+#include <stdlib.h>
+
 #include "opt.h"
+#include "mem.h"
 
 static inline bool isConst(Node *node) {
   return (
     node->type == NODE_INT    ||
     node->type == NODE_FLOAT  ||
     node->type == NODE_BOOL   ||
-    node->type == NODE_NIL
+    node->type == NODE_NIL    ||
+    node->type == NODE_STR
   );
 }
 
@@ -296,6 +301,56 @@ static void constFoldBool(Node *node) {
   }
 }
 
+static void constFoldStr(Node *node) {
+  BinOp binOp = NODE_AS_BINOP(node);  
+
+  Node *leftNode = binOp.left;
+  Node *rightNode = binOp.right;
+
+  Str left = NODE_AS_STR(leftNode);
+  Str right = NODE_AS_STR(rightNode);
+
+  Tok leftTok = left.str;
+  Tok rightTok = right.str;
+
+  Loc leftLoc = leftTok.loc;
+  Loc rightLoc = rightTok.loc;
+
+  leftLoc.length -= 1;
+  leftTok.loc = leftLoc;
+
+  rightTok.lexeme += 1;
+   
+  size_t length = leftLoc.length + rightLoc.length - 1;
+
+  const char *leftLexeme = copyLexeme(leftTok);
+  const char *rightLexeme = copyLexeme(rightTok);
+
+  char *result = ALLOC(char, length);
+  memcpy(result, leftLexeme, leftLoc.length);
+  memcpy(result + leftLoc.length, rightLexeme, rightLoc.length - 1);
+
+  Loc loc = leftLoc;
+  loc.length = length;
+
+  Tok concatenated = newTok(result, TOK_STR, loc); 
+
+  node->type = NODE_STR;
+  
+  Str s = {
+    .str = concatenated,
+    .ownsLexeme = true
+  };
+
+  free((char *)leftLexeme);
+  free((char *)rightLexeme);
+
+  freeNode(leftNode);
+  freeNode(rightNode);
+
+  node->as.str = s;
+}
+
 static void constFold(Node *node) {
   // the type is always known before optimization, so there’s no need
   // to call inferType().
@@ -311,6 +366,9 @@ static void constFold(Node *node) {
     case TYPE_BOOL:
       constFoldBool(node);
       break;
+    
+    case TYPE_STR:
+      constFoldStr(node);
       
     default:
       break;

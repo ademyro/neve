@@ -49,6 +49,8 @@ typedef struct {
 
 typedef struct {
   Tok str;
+  
+  bool ownsLexeme;
 } Str;
 
 typedef struct {
