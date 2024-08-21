@@ -38,18 +38,18 @@ void freeObj(Obj *obj) {
     case OBJ_STR: {
       ObjStr *str = (ObjStr *)obj;
 
-      // the memory is actually allocated one address prior:
-      // at the first double quote.  
-      // "Hello, world!"
-      // ^ here
-      // however, because we trim the quotes in emit.c:emitStr(), 
-      // "Hello, world!"   ->    Hello, world!
-      //                 becomes
-      // the allocated pointer lies one pointer ahead, so we need to offset
-      // it by one to avoid a `free(): invalid pointer` error.
-      char *allocatedPtr = (char *)(str->chars - 1);
-
       if (str->ownsStr) {
+        // the memory is actually allocated one address prior:
+        // at the first double quote.  
+        // "Hello, world!"
+        // ^ here
+        // however, because we trim the quotes in emit.c:emitStr(), 
+        // "Hello, world!"   ->    Hello, world!
+        //                 becomes
+        // the allocated pointer lies one pointer ahead, so we need to offset
+        // it by one to avoid a `free(): invalid pointer` error.
+        char *allocatedPtr = (char *)(str->chars - 1);
+
         FREE_ARR(char, allocatedPtr, str->length + 1);
       }
 
