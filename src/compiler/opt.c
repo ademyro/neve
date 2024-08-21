@@ -327,6 +327,7 @@ static void constFoldStr(Node *node) {
   const char *rightLexeme = copyLexeme(rightTok);
 
   char *result = ALLOC(char, length);
+
   memcpy(result, leftLexeme, leftLoc.length);
   memcpy(result + leftLoc.length, rightLexeme, rightLoc.length - 1);
 
@@ -344,6 +345,14 @@ static void constFoldStr(Node *node) {
 
   free((char *)leftLexeme);
   free((char *)rightLexeme);
+
+  if (left.ownsLexeme) {
+    free((char *)left.str.lexeme); 
+  }
+
+  if (right.ownsLexeme) {
+    free((char *)right.str.lexeme); 
+  }
 
   freeNode(leftNode);
   freeNode(rightNode);

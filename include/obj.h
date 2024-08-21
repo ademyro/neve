@@ -23,8 +23,9 @@ struct Obj {
 struct ObjStr {
   Obj obj; 
 
+  bool ownsStr;
   size_t length;
-  char *chars;
+  const char *chars;
 };
 
 /*
@@ -36,8 +37,7 @@ static inline bool isObjType(Val val, ObjType type) {
 }
 */
 
-ObjStr *takeStr(VM *vm, char *chars, size_t length);
-ObjStr *copyStr(VM *vm, const char *chars, size_t length);
+ObjStr *allocStr(VM *vm, bool ownsStr, const char *chars, size_t length);
 
 void printObj(Val val);
 

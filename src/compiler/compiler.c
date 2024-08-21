@@ -412,8 +412,8 @@ static Node *term(Ctx *ctx) {
 
     if (!isNum(left) || !isNum(right)) {
       if (
-        op.type != TOK_PLUS && 
-        !checkType(left, TYPE_STR) && checkType(right, TYPE_STR)
+        (op.type != TOK_PLUS && 
+        !checkType(left, TYPE_STR)) || !checkType(right, TYPE_STR)
       ) {
         binOpTypeErr(ctx, left, op, right);
       }

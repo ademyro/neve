@@ -110,7 +110,9 @@ static void emitStr(Ctx *ctx, Str node) {
   const char *trimmedLexeme = tok.lexeme + 1;
   const size_t trimmedLength = tok.loc.length - 2;
 
-  Val val = OBJ_VAL(copyStr(ctx->vm, trimmedLexeme, trimmedLength));
+  Val val = OBJ_VAL(
+    allocStr(ctx->vm, node.ownsLexeme, trimmedLexeme, trimmedLength)
+  );
 
   emitConst(ctx, val, tok.loc);
 }

@@ -18,10 +18,6 @@ static void freeBool(Bool *node) {
 }
 
 static void freeStr(Str *node) {
-  if (node->ownsLexeme) {
-    free((char *)node->str.lexeme);
-  }
-
   node->str = emptyTok();
   node->ownsLexeme = false;
 }

@@ -34,8 +34,6 @@ VM newVM() {
 }
 
 void freeVM(VM *vm) {
-  IGNORE(vm);
-
   freeObjs(vm->objs);
   vm->objs = NULL;
 }
@@ -163,12 +161,13 @@ static Aftermath run(VM *vm) {
         size_t length = a->length + b->length;
 
         char *chars = ALLOC(char, length + 1);
+
         memcpy(chars, a->chars, a->length);
         memcpy(chars + a->length, b->chars, b->length);
 
         chars[length] = '\0';
 
-        ObjStr *result = takeStr(vm, chars, length);
+        ObjStr *result = allocStr(vm, true, chars, length);
         push(vm, OBJ_VAL(result));
         break;
       }
