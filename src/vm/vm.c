@@ -1,7 +1,10 @@
 #include <stdio.h>
+#include <string.h>
 
 #include "common.h"
 #include "compiler.h"
+#include "mem.h"
+#include "obj.h"
 #include "vm.h"
 
 #ifdef DEBUG_EXEC
@@ -23,19 +26,37 @@ static void printStack(VM *vm) {
 #endif
 
 VM newVM() {
-  VM vm = { 0 };
+  VM vm = {
+    .objs = NULL
+  };
 
   return vm;
 }
 
 void freeVM(VM *vm) {
-  IGNORE(vm);
-
-  // ...
+  freeObjs(vm->objs);
+  vm->objs = NULL;
 }
 
 void resetStack(VM *vm) {
   vm->stackTop = vm->stack;
+}
+
+static void concat(VM *vm) {
+  ObjStr *b = VAL_AS_STR(pop(vm));
+  ObjStr *a = VAL_AS_STR(pop(vm));
+
+  size_t length = a->length + b->length;
+
+  char *chars = ALLOC(char, length + 1);
+
+  memcpy(chars, a->chars, a->length);
+  memcpy(chars + a->length, b->chars, b->length);
+
+  chars[length] = '\0';
+
+  ObjStr *result = allocStr(vm, true, chars, length);
+  push(vm, OBJ_VAL(result));
 }
 
 static Aftermath run(VM *vm) {
@@ -150,6 +171,60 @@ static Aftermath run(VM *vm) {
         BIN_OP(NUM_VAL, /);
         break;
 
+      case OP_CONCAT: {
+        concat(vm);
+        break;
+      }
+
+      /*
+      // TODO: reimplement this once we can
+
+      case OP_INTERPOL: {
+        const uint8_t times = READ_BYTE();
+        const size_t initialSize = 32;
+        
+        const bool endsWithStr = (times & 1) == 0;
+
+        bool shouldConvertToStr = endsWithStr;
+
+        // the stack looks like this:
+        // [S] [E] [S] [E] [S] [E]
+        // where S denotes a string value and E denotes a value of
+        // any type.
+        // we convert the top of the stack to a string and obtain this 
+        // configuration:
+        // [S] [E] [S] [E] [S] [S]
+        if (!endsWithStr) {
+            char *buffer = ALLOC(char, initialSize);
+            size_t length = valAsStr(buffer, vm->stackTop[-1]);
+
+            ObjStr *str = allocStr(vm, true, buffer, length);
+            vm->stackTop[-1] = OBJ_VAL(str);
+        }
+
+        for (uint8_t i = 0; i < times; i++) {
+          // not really proud of this but hey, it saves a bit of memory.
+          if (shouldConvertToStr) {
+          const int8_t slot = -2;
+
+          char *buffer = ALLOC(char, initialSize);
+          size_t length = valAsStr(buffer, vm->stackTop[slot]);
+
+          ObjStr *str = allocStr(vm, true, buffer, length);
+          vm->stackTop[slot] = OBJ_VAL(str);
+          }
+
+#ifdef DEBUG_EXEC
+          printStack(vm);     
+#endif
+
+          concat(vm);
+        }
+
+        break;
+      }
+      */
+
       case OP_SHL:
         BIT_OP(<<);
         break;
@@ -222,7 +297,7 @@ static Aftermath run(VM *vm) {
 Aftermath interpret(const char *fname, VM *vm, const char *src) {
   Chunk ch = newChunk();
 
-  if (!compile(fname, src, &ch)) {
+  if (!compile(vm, fname, src, &ch)) {
     freeChunk(&ch); 
 
     return AFTERMATH_COMPILE_ERR;

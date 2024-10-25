@@ -19,31 +19,18 @@ TypeTable *allocTypeTable() {
   nilType->kind = TYPE_NIL;
   nilType->name = "Nil";
 
+  Type *strType = malloc(sizeof (*strType));
+  strType->kind = TYPE_STR;
+  strType->name = "Str";
+
   TypeTable *table = malloc(sizeof (*table));
   table->intType = intType;
   table->floatType = floatType;
   table->boolType = boolType;
   table->nilType = nilType;
+  table->strType = strType;
 
   return table;
-}
-
-bool getType(TypeTable *table, TypeKind kind, Type *t) {
-  // we’ll definitely switch to a table
-  switch (kind) {
-    case TYPE_INT:
-      *t = *table->intType;
-      break;
-
-    case TYPE_FLOAT:
-      *t = *table->floatType;
-      break;
-
-    default:
-      return false;
-  }
-
-  return true;
 }
 
 bool typesMatch(Type a, Type b) {
@@ -67,19 +54,25 @@ void freeTypeTable(TypeTable *table) {
   table->floatType->kind = TYPE_UNKNOWN;
   table->boolType->kind = TYPE_UNKNOWN;
   table->nilType->kind = TYPE_UNKNOWN;
+  table->strType->kind = TYPE_UNKNOWN;
 
   table->intType->name = NULL;
   table->floatType->name = NULL;
   table->boolType->name = NULL;
   table->nilType->name = NULL;
+  table->strType->name = NULL;
 
   free(table->intType);
   free(table->floatType);
   free(table->boolType);
   free(table->nilType);
+  free(table->strType);
 
   table->intType = NULL;
   table->floatType = NULL;
+  table->boolType = NULL;
+  table->nilType = NULL;
+  table->strType = NULL;
 
   free(table);
   table = NULL;

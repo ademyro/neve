@@ -5,8 +5,10 @@
 #include "err.h"
 #include "lexer.h"
 #include "type.h"
+#include "vm.h"
 
 typedef struct {
+  VM *vm;
   ErrMod errMod;
   Parser parser;
   Lexer lexer;
@@ -14,6 +16,6 @@ typedef struct {
   TypeTable *types;
 } Ctx;
 
-Ctx newCtx(ErrMod mod, Chunk *ch);
+Ctx newCtx(VM *vm, ErrMod mod, Chunk *ch);
 
 #endif

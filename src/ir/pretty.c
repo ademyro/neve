@@ -62,6 +62,23 @@ static void printBool(Bool b) {
   write("Bool %s", b.value ? "true" : "false");
 }
 
+static void printStr(Str s) {
+  Tok tok = s.str;
+  
+  write("Str %.*s (size %ld)", SHOW_LEXEME(tok), tok.loc.length);
+}
+
+/*
+static void printInterpol(PrettyPrinter *printer, Interpol i) {
+  Tok str = i.str;
+
+  write("Interpol %.*s#{", SHOW_LEXEME(str));
+  printNode(printer, i.expr);
+  write("} ");
+  printNode(printer, i.next);
+}
+*/
+
 static void printNode(PrettyPrinter *printer, Node *node) {
   switch (node->type) {
     case NODE_BINOP:
@@ -87,6 +104,16 @@ static void printNode(PrettyPrinter *printer, Node *node) {
     case NODE_NIL:
       write("Nil");
       break;
+
+    case NODE_STR:
+      printStr(NODE_AS_STR(node));
+      break;
+
+    /*
+    case NODE_INTERPOL:
+      printInterpol(printer, NODE_AS_INTERPOL(node));
+      break;
+    */
 
     default:
       break;

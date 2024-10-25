@@ -12,6 +12,8 @@ typedef struct {
 
   Val stack[STACK_MAX];
   Val *stackTop;
+
+  Obj *objs;
 } VM;
 
 typedef enum {

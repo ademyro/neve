@@ -70,8 +70,9 @@ static void runFile(const char *fname) {
 
   Aftermath aftermath = interpret(fname, &vm, src); 
 
+  freeVM(&vm);
   free((char *)src);
-  
+
   if (aftermath != AFTERMATH_OK) {
     exit(1);
   }
