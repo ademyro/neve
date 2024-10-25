@@ -59,4 +59,6 @@ Tok emptyTok();
 
 char *copyLexeme(Tok tok);
 
+void trimStrTokQuotes(Tok *tok);
+
 #endif

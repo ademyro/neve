@@ -324,6 +324,8 @@ static Tok number(Lexer *lexer) {
 }
 
 static Tok interpol(Lexer *lexer) {
+  // FIXME: prevent interpolDepth from exceeding 255, so we can encode the 
+  // number of interpolations in a single byte in the bytecode.
   lexer->interpolDepth++;
 
   Tok interpol = makeTok(lexer, TOK_INTERPOL);
@@ -332,10 +334,17 @@ static Tok interpol(Lexer *lexer) {
   advance(lexer);
   advance(lexer);
 
+  if (peek(lexer) == '}') {
+    // i.e. empty interpolation
+    advance(lexer);
+    
+    return makeTok(lexer, TOK_ERR);
+  }
+
   return interpol;
 }
 
-static Tok string(Lexer *lexer) {
+static Tok str(Lexer *lexer) {
   while (peek(lexer) != '"' && !isAtEnd(lexer)) {
     if (peek(lexer) == '\n') {
       newline(lexer);
@@ -444,15 +453,12 @@ Tok nextTok(Lexer *lexer) {
       );
 
     case ';':
+    case '\n':
       newline(lexer);
       return makeTok(lexer, TOK_NEWLINE);
 
-    case '\n':
-      lexer->loc.line++;
-      return makeTok(lexer, TOK_NEWLINE);
-
     case '"':
-      return string(lexer);
+      return str(lexer);
 
     case '}':
       if (lexer->interpolDepth == 0) {
@@ -464,7 +470,7 @@ Tok nextTok(Lexer *lexer) {
       // discard the '}'
       sync(lexer);
 
-      return string(lexer);
+      return str(lexer);
 
     default:
       return unexpectedChar(lexer);

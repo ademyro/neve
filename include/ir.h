@@ -4,13 +4,14 @@
 #include "tok.h"
 #include "type.h"
 
-#define NODE_AS_INT(node)     ((node)->as.i)
-#define NODE_AS_FLOAT(node)   ((node)->as.f)
-#define NODE_AS_BOOL(node)    ((node)->as.b)
-#define NODE_AS_NIL(node)     ((node)->as.nilLoc)
-#define NODE_AS_STR(node)     ((node)->as.str)
-#define NODE_AS_UNOP(node)    ((node)->as.unOp)
-#define NODE_AS_BINOP(node)   ((node)->as.binOp)
+#define NODE_AS_INT(node)       ((node)->as.i)
+#define NODE_AS_FLOAT(node)     ((node)->as.f)
+#define NODE_AS_BOOL(node)      ((node)->as.b)
+#define NODE_AS_NIL(node)       ((node)->as.nilLoc)
+#define NODE_AS_STR(node)       ((node)->as.str)
+// #define NODE_AS_INTERPOL(node)  ((node)->as.interpol)
+#define NODE_AS_UNOP(node)      ((node)->as.unOp)
+#define NODE_AS_BINOP(node)     ((node)->as.binOp)
 
 typedef enum {
   NODE_INT,
@@ -18,6 +19,7 @@ typedef enum {
   NODE_BOOL,
   NODE_NIL,
   NODE_STR,
+  // NODE_INTERPOL,
   NODE_UNOP,
   NODE_BINOP
 } NodeType;
@@ -53,6 +55,16 @@ typedef struct {
   bool ownsLexeme;
 } Str;
 
+/*
+typedef struct {
+  Tok str;
+  bool ownsLexeme;
+
+  Node *expr;
+  Node *next;
+} Interpol;
+*/
+
 typedef struct {
   Tok op;
   UnOpType opType;
@@ -73,6 +85,7 @@ struct Node {
     UnOp unOp;
     BinOp binOp;
     Str str;
+    // Interpol interpol;
 
     Loc nilLoc;
   } as;
@@ -86,6 +99,7 @@ Node *newFloat(TypeTable *table, double value, Loc loc);
 Node *newBool(TypeTable *table, bool value, Loc loc);
 Node *newNil(TypeTable *table, Loc loc);
 Node *newStr(TypeTable *table, Tok tok);
+Node *newInterpol(TypeTable *table, Tok tok, Node *expr, Node *next);
 Node *newUnOp(TypeTable *table, Tok op, UnOpType type, Node *operand);
 Node *newBinOp(TypeTable *table, Node *left, Tok op, Node *right);
 

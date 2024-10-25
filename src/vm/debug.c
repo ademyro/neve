@@ -35,6 +35,14 @@ static size_t longConstInstr(const char *name, Chunk *ch, size_t offset) {
   return offset + 4;
 }
 
+static size_t byteInstr(const char *name, Chunk *ch, size_t offset) {
+  const uint8_t opOffset = ch->code[offset + 1]; 
+  
+  printf("%-8s %u\n", name, opOffset);
+
+  return offset + 2;
+}
+
 void disasmChunk(Chunk *ch, const char *name) {
   printf("%s:\n", name);
   size_t offset = 0;
@@ -45,6 +53,8 @@ void disasmChunk(Chunk *ch, const char *name) {
 }
 
 size_t disasmInstr(Chunk *ch, size_t offset) {
+  IGNORE(byteInstr);
+
   printf("%4zu  ", offset);
 
   const uint8_t instr = ch->code[offset];
@@ -114,6 +124,11 @@ size_t disasmInstr(Chunk *ch, size_t offset) {
 
     case OP_CONCAT:
       return simpleInstr("concat", offset);
+
+    /*
+    case OP_INTERPOL:
+      return byteInstr("interpol", ch, offset);
+    */
 
     case OP_SHL:
       return simpleInstr("shl", offset);

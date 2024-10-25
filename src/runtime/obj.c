@@ -39,22 +39,31 @@ void freeObj(Obj *obj) {
       ObjStr *str = (ObjStr *)obj;
 
       if (str->ownsStr) {
-        // the memory is actually allocated one address prior:
-        // at the first double quote.  
-        // "Hello, world!"
-        // ^ here
-        // however, because we trim the quotes in emit.c:emitStr(), 
-        // "Hello, world!"   ->    Hello, world!
-        //                 becomes
-        // the allocated pointer lies one pointer ahead, so we need to offset
-        // it by one to avoid a `free(): invalid pointer` error.
-        char *allocatedPtr = (char *)(str->chars - 1);
-
-        FREE_ARR(char, allocatedPtr, str->length + 1);
+        FREE_ARR(char, (char *)str->chars, str->length);
       }
 
       FREE(ObjStr, obj);
       break;
     }
   }
+}
+
+size_t objAsStr(const char *buffer, Obj *obj) {
+  if (obj->type == OBJ_STR) {
+    ObjStr *str = (ObjStr *)obj;
+
+    buffer = str->chars;
+
+    // avoiding “unused-but-set-parameter”
+    IGNORE(buffer);
+    return str->length;
+  }
+
+  /*
+  switch (obj->type) {
+    ...
+  }
+  */
+
+  return 0;
 }

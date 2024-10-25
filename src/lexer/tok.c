@@ -63,8 +63,22 @@ char *copyLexeme(Tok tok) {
   const size_t length = (size_t)tok.loc.length;
 
   char *lexeme = malloc(length + 1);
+
   memcpy(lexeme, tok.lexeme, length);
   lexeme[length] = '\0';
 
   return lexeme;
+}
+
+void trimStrTokQuotes(Tok *tok) {
+  if (tok->loc.length == 1) {
+    tok->loc.length = 0;
+    return;
+  }
+
+  const bool startsWithQuote = *tok->lexeme == '"';
+  const bool endsWithQuote = tok->lexeme[tok->loc.length - 1] == '"';
+
+  tok->lexeme += startsWithQuote;
+  tok->loc.length -= startsWithQuote + endsWithQuote;
 }

@@ -1,3 +1,5 @@
+#include <stdio.h>
+
 #include "chunk.h"
 #include "emit.h"
 #include "obj.h"
@@ -107,15 +109,59 @@ static void emitFloat(Ctx *ctx, Float node) {
 static void emitStr(Ctx *ctx, Str node) {
   Tok tok = node.str;
 
-  const char *trimmedLexeme = tok.lexeme + 1;
-  const size_t trimmedLength = tok.loc.length - 2;
+  fprintf(stderr, "in emitStr(): %.*s\n", SHOW_LEXEME(tok));
+
+  const char *chars = (
+    node.ownsLexeme ? copyLexeme(tok) : tok.lexeme
+  );
 
   Val val = OBJ_VAL(
-    allocStr(ctx->vm, node.ownsLexeme, trimmedLexeme, trimmedLength)
+    allocStr(ctx->vm, node.ownsLexeme, chars, tok.loc.length)
   );
 
   emitConst(ctx, val, tok.loc);
 }
+
+/*
+static void emitInterpol(Ctx *ctx, Interpol node) {
+  Str syntheticStr = {
+    .str = node.str,
+    .ownsLexeme = node.ownsLexeme
+  };
+
+  emitStr(ctx, syntheticStr);
+  emitNode(ctx, node.expr);
+
+  Node *next = node.next;
+
+  // we could use recursion, but OP_INTERPOL takes an operand, so it’s better 
+  // to do it this way.
+  uint8_t count = 1;
+  while (next->type == NODE_INTERPOL) {
+    Interpol i = NODE_AS_INTERPOL(next);
+
+    Str syntheticStr = {
+      .str = i.str,
+      .ownsLexeme = i.ownsLexeme
+    };
+
+    emitStr(ctx, syntheticStr); 
+    emitNode(ctx, i.expr);
+
+    count += 2;
+    next = i.next;    
+  }
+
+  Str closingStr = NODE_AS_STR(next);
+
+  if (closingStr.str.loc.length > 0) {
+    emitStr(ctx, closingStr);
+    count += 1;
+  }
+
+  emitBoth(ctx, OP_INTERPOL, count, node.str.loc);
+}
+*/
 
 Chunk *currChunk(Ctx *ctx) {
   return ctx->currCh;
@@ -170,9 +216,14 @@ void emitNode(Ctx *ctx, Node *node) {
       break;
     }
 
-    case NODE_STR: {
+    case NODE_STR:
       emitStr(ctx, NODE_AS_STR(node));
       break;
-    }
+    
+    /*
+    case NODE_INTERPOL:
+      emitInterpol(ctx, NODE_AS_INTERPOL(node));
+      break;
+    */
   }
 }

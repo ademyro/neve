@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "mem.h"
@@ -86,4 +87,50 @@ bool valsEq(Val a, Val b) {
   }
 
   return false;
+}
+
+size_t valAsStr(char *buffer, Val val) {
+  switch (val.type) {
+    case VAL_OBJ:
+      return objAsStr(buffer, VAL_AS_OBJ(val));
+
+    case VAL_NIL: {
+      const size_t length = 3;
+
+      strncpy(buffer, "nil", length);
+      return length;
+    }
+
+    case VAL_BOOL: {
+      const bool isTrue = VAL_AS_BOOL(val);
+
+      // we’re doing all this redundant stuff because clang-tidy doesn’t want
+      // us to use magic values.
+      // this is silly, but i also don’t want to disable the no-magic-values 
+      // check.
+      const size_t trueLength = 4;
+      const size_t falseLength = 5;
+
+      const size_t length = isTrue ? trueLength : falseLength;
+      
+      strncpy(buffer, isTrue ? "true" : "false", length);
+
+      return length;
+    }
+
+    case VAL_NUM: {
+      const size_t bufferSize = 32;
+
+      const size_t length = (size_t)snprintf(
+        buffer, 
+        bufferSize, 
+        "%.14g", 
+        VAL_AS_NUM(val)
+      ); 
+
+      return length;
+    }
+  }
+
+  return 0;
 }

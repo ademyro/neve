@@ -6,7 +6,6 @@
 #include "ctx.h"
 #include "emit.h"
 #include "err.h"
-#include "opt.h"
 #include "pretty.h"
 #include "tok.h"
 #include "ir.h"
@@ -272,6 +271,8 @@ static Node *primary(Ctx *ctx);
 static Node *intLiteral(Ctx *ctx);
 static Node *floatLiteral(Ctx *ctx);
 static Node *grouping(Ctx *ctx);
+static Node *str(Ctx *ctx);
+static Node *interpol(Ctx *ctx);
 
 static Node *expr(Ctx *ctx) {
   return bitOr(ctx);
@@ -504,8 +505,10 @@ static Node *primary(Ctx *ctx) {
       return grouping(ctx);
     
     case TOK_STR:
-      advance(ctx);
-      return newStr(ctx->types, tok);
+      return str(ctx);
+
+    case TOK_INTERPOL:
+      return interpol(ctx);
 
     default:
       break;
@@ -601,9 +604,49 @@ static Node *grouping(Ctx *ctx) {
   return grouped;
 }
 
-bool compile(VM *vm, const char *fname, const char *src, Chunk *ch) {
-  IGNORE(emitBoth);
+static Node *str(Ctx *ctx) {
+  Tok tok = consume(ctx);
 
+  trimStrTokQuotes(&tok);
+
+  return newStr(ctx->types, tok);
+}
+
+static Node *interpol(Ctx *ctx) {
+  // interpolation not yet supported
+  Tok tok = consume(ctx);
+
+  unexpectedToken(ctx, tok);
+
+  return newStr(ctx->types, tok);
+  /*
+  Tok tok = consume(ctx); 
+
+  trimStrTokQuotes(&tok);
+
+  Node *interpolExpr = expr(ctx);
+
+  // TODO: check if the interpolExpr is Showable.  if not, make it
+  // an error.
+  
+  Node *next;
+  if (check(ctx, TOK_INTERPOL)) {
+    next = interpol(ctx);
+  } else {
+    if (!check(ctx, TOK_STR)) {
+      unexpectedToken(ctx, tok);
+
+      return newInterpol(ctx->types, tok, interpolExpr, NULL);
+    }
+
+    next = str(ctx);
+  }
+
+  return newInterpol(ctx->types, tok, interpolExpr, next);
+  */
+}
+
+bool compile(VM *vm, const char *fname, const char *src, Chunk *ch) {
   ErrMod mod = newErrMod(fname, src);
   Ctx ctx = newCtx(vm, mod, ch);
 
@@ -617,14 +660,9 @@ bool compile(VM *vm, const char *fname, const char *src, Chunk *ch) {
 
   if (!hadErrs) {
 #ifdef DEBUG_COMPILE
-    fprintf(stderr, "unoptimized:\n");
     prettyPrint(ast);
 #endif
-    optNode(ast);
-#ifdef DEBUG_COMPILE
-    fprintf(stderr, "optimized:\n");
-    prettyPrint(ast);
-#endif
+
     emitNode(&ctx, ast);
   }
 

@@ -43,4 +43,6 @@ void printObj(Val val);
 
 void freeObj(Obj *obj);
 
+size_t objAsStr(const char *buffer, Obj *obj);
+
 #endif

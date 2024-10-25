@@ -23,6 +23,7 @@ typedef enum {
   OP_MUL,
   OP_DIV,
   OP_CONCAT,
+  // OP_INTERPOL,
   OP_SHL,
   OP_SHR,
   OP_BIT_AND,

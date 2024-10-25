@@ -50,5 +50,6 @@ void freeValArr(ValArr *arr);
 void printVal(Val val);
 
 bool valsEq(Val a, Val b);
+size_t valAsStr(char *buffer, Val val);
 
 #endif

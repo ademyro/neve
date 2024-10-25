@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <stdio.h>
 
 #include "ir.h"
 
@@ -18,9 +19,27 @@ static void freeBool(Bool *node) {
 }
 
 static void freeStr(Str *node) {
+  if (node->ownsLexeme) {
+    free((char *)node->str.lexeme);
+  } 
+
   node->str = emptyTok();
   node->ownsLexeme = false;
 }
+
+/*
+static void freeInterpol(Interpol *node) {
+  if (node->ownsLexeme) {
+    free((char *)node->str.lexeme);
+  }
+
+  node->str = emptyTok();
+  node->ownsLexeme = false;
+
+  freeNode(node->expr);
+  freeNode(node->next);
+}
+*/
 
 static void freeUnOp(UnOp *node) {
   node->op = emptyTok();
@@ -160,6 +179,27 @@ Node *newStr(TypeTable *table, Tok tok) {
   return node;
 }
 
+/*
+Node *newInterpol(TypeTable *table, Tok tok, Node *expr, Node *next) {
+  Interpol interpol = {
+    .str = tok,
+    .expr = expr,
+    .next = next
+  };
+
+  Node *node = malloc(sizeof (*node));
+  node->type = NODE_INTERPOL;
+  node->valType = unknownType();
+  node->valType = *table->strType;
+
+  node->as.interpol = interpol;
+
+  fprintf(stderr, "node: %p\n", (void *)node);
+  
+  return node;
+}
+*/
+
 Node *newUnOp(TypeTable *table, Tok op, UnOpType opType, Node *operand) {
   UnOp unOp = {
     .op = op,
@@ -195,6 +235,8 @@ Node *newBinOp(TypeTable *table, Node *left, Tok op, Node *right) {
 }
 
 void freeNode(Node *node) {
+  fprintf(stderr, "freeing: %p\n", (void *)node);
+
   switch (node->type) {
     case NODE_INT:
       freeInt(&NODE_AS_INT(node));
@@ -216,6 +258,12 @@ void freeNode(Node *node) {
       freeStr(&NODE_AS_STR(node));
       break;
     
+    /*
+    case NODE_INTERPOL:
+      freeInterpol(&NODE_AS_INTERPOL(node));
+      break;
+    */
+
     case NODE_UNOP:
       freeUnOp(&NODE_AS_UNOP(node));
       break;
@@ -288,6 +336,11 @@ Loc getLoc(Node *node) {
 
     case NODE_STR:
       return NODE_AS_STR(node).str.loc;
+
+    /*
+    case NODE_INTERPOL:
+      return NODE_AS_INTERPOL(node).str.loc;
+    */
   }
 
   return newLoc();
@@ -308,6 +361,17 @@ Loc getFullLoc(Node *node) {
 
       return mergeLocs(unOp.op.loc, getFullLoc(unOp.operand));
     }
+
+    /*
+    case NODE_INTERPOL: {
+      Interpol interpol = NODE_AS_INTERPOL(node);
+
+      return mergeLocs(
+        interpol.str.loc,
+        mergeLocs(getFullLoc(interpol.expr), getFullLoc(interpol.next))
+      );
+    }
+    */
     
     default:
       return getLoc(node);
