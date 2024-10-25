@@ -25,6 +25,10 @@ This means that we’re going to introduce two major changes:
 * We’re getting rid of the REPL.  Having a separate compiler for Neve means longer compilation times, and a less snappy 
 REPL experience.  Moreover, writing the bytecode output to a file and *then* having the Neve interpreter read it isn’t exactly
 desirable--we don’t want to create a new file for the tiniest expressions.
+  * It might be possible to get around that, though.  If we can output the bytecode to an array of bytes without needing to
+    create a new file just for that, and then pass that array to the interpreter, having a REPL might be manageable.  
+    Ideally, we could implement a “REPL mode” for `nevec` that skips through all optimizations, to provide the snappiest 
+    experience.
 
 * Neve will now have two components--`neve` and `nevec`.  `nevec` will compile the `.neve` file to a `.geada` bytecode 
 file, and `neve` will interpret that file.  `nevec` will be implemented in Python, but we will immediately work on 
