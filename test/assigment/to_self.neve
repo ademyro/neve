@@ -1,7 +1,7 @@
 class Foo
-  fun assign_self 
+  fun assign_self(var self)
     self = "value" # Error at '=': Invalid assignment target.
   end
 end
 
-Foo().assign_self
+(Foo with ?).assign_self

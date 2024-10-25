@@ -6,7 +6,6 @@
 #include "ctx.h"
 #include "emit.h"
 #include "err.h"
-#include "opt.h"
 #include "pretty.h"
 #include "tok.h"
 #include "ir.h"
@@ -268,8 +267,12 @@ static Node *term(Ctx *ctx);
 static Node *factor(Ctx *ctx);
 static Node *unary(Ctx *ctx);
 static Node *primary(Ctx *ctx);
+
 static Node *intLiteral(Ctx *ctx);
 static Node *floatLiteral(Ctx *ctx);
+static Node *grouping(Ctx *ctx);
+static Node *str(Ctx *ctx);
+static Node *interpol(Ctx *ctx);
 
 static Node *expr(Ctx *ctx) {
   return bitOr(ctx);
@@ -409,7 +412,12 @@ static Node *term(Ctx *ctx) {
     Node *right = factor(ctx);
 
     if (!isNum(left) || !isNum(right)) {
-      binOpTypeErr(ctx, left, op, right);
+      if (
+        (op.type != TOK_PLUS && 
+        !checkType(left, TYPE_STR)) || !checkType(right, TYPE_STR)
+      ) {
+        binOpTypeErr(ctx, left, op, right);
+      }
     }
 
     Node *binOp = newBinOp(ctx->types, left, op, right);
@@ -475,49 +483,35 @@ static Node *unary(Ctx *ctx) {
 }
 
 static Node *primary(Ctx *ctx) {
-  // TODO: make this a switch the moment we add one more if 
-  // statement
-  if (check(ctx, TOK_INT)) {
-    return intLiteral(ctx);
-  }
+  Tok tok = ctx->parser.curr;
 
-  if (check(ctx, TOK_FLOAT)) {
-    return floatLiteral(ctx);
-  }
+  switch (tok.type) {
+    case TOK_INT:
+      return intLiteral(ctx);
 
-  if (checkEither(ctx, TOK_TRUE, TOK_FALSE)) {
-    Tok tok = consume(ctx);
+    case TOK_FLOAT:
+      return floatLiteral(ctx);
+
+    case TOK_TRUE:
+    case TOK_FALSE:
+      advance(ctx);
+      return newBool(ctx->types, tok.type == TOK_TRUE, tok.loc);
+
+    case TOK_NIL:
+      advance(ctx);
+      return newNil(ctx->types, tok.loc);
+      
+    case TOK_LPAREN:
+      return grouping(ctx);
     
-    return newBool(ctx->types, tok.type == TOK_TRUE, tok.loc);
-  }
+    case TOK_STR:
+      return str(ctx);
 
-  if (check(ctx, TOK_NIL)) {
-    Tok tok = consume(ctx);
+    case TOK_INTERPOL:
+      return interpol(ctx);
 
-    return newNil(ctx->types, tok.loc);
-  }
-
-  if (match(ctx, TOK_LPAREN)) {
-    // TODO: maybe we’ll need a separate NODE_GROUPED variant
-    // for constant folding?
-    Node *grouped = expr(ctx);
-
-    if (!match(ctx, TOK_RPAREN) && !IS_PANICKING(ctx)) {
-      markErr(ctx);
-      Tok curr = offendingTok(ctx);
-
-      setNewErr(&ctx->errMod, ERR_OPEN_PARENS, curr.loc);
-      ErrMod mod = ctx->errMod;
-
-      reportErr(mod, "parentheses left open");
-      showOffendingLine(mod, "expected ‘)’ to close parentheses");
-      showHint(mod, "you can easily close them like so:");
-      suggestFix(mod, curr.loc, ")");
-
-      endErr(mod);
-    }
-
-    return grouped;
+    default:
+      break;
   }
 
   Tok curr = offendingTok(ctx);
@@ -542,8 +536,7 @@ static Node *primary(Ctx *ctx) {
 
   endErr(mod);
 
-  // TODO: replace this with a `nil` node
-  return newInt(ctx->types, -1L, curr.loc);
+  return newNil(ctx->types, curr.loc);
 }
 
 static Node *intLiteral(Ctx *ctx) {
@@ -586,11 +579,76 @@ static Node *floatLiteral(Ctx *ctx) {
   return newFloat(ctx->types, value, f.loc);
 }
 
-bool compile(const char *fname, const char *src, Chunk *ch) {
-  IGNORE(emitBoth);
+static Node *grouping(Ctx *ctx) {
+  advance(ctx);
 
+  // TODO: maybe we’ll need a separate NODE_GROUPED variant
+  // for constant folding?
+  Node *grouped = expr(ctx);
+
+  if (!match(ctx, TOK_RPAREN) && !IS_PANICKING(ctx)) {
+    markErr(ctx);
+    Tok curr = offendingTok(ctx);
+
+    setNewErr(&ctx->errMod, ERR_OPEN_PARENS, curr.loc);
+    ErrMod mod = ctx->errMod;
+
+    reportErr(mod, "parentheses left open");
+    showOffendingLine(mod, "expected ‘)’ to close parentheses");
+    showHint(mod, "you can easily close them like so:");
+    suggestFix(mod, curr.loc, ")");
+
+    endErr(mod);
+  }
+
+  return grouped;
+}
+
+static Node *str(Ctx *ctx) {
+  Tok tok = consume(ctx);
+
+  trimStrTokQuotes(&tok);
+
+  return newStr(ctx->types, tok);
+}
+
+static Node *interpol(Ctx *ctx) {
+  // interpolation not yet supported
+  Tok tok = consume(ctx);
+
+  unexpectedToken(ctx, tok);
+
+  return newStr(ctx->types, tok);
+  /*
+  Tok tok = consume(ctx); 
+
+  trimStrTokQuotes(&tok);
+
+  Node *interpolExpr = expr(ctx);
+
+  // TODO: check if the interpolExpr is Showable.  if not, make it
+  // an error.
+  
+  Node *next;
+  if (check(ctx, TOK_INTERPOL)) {
+    next = interpol(ctx);
+  } else {
+    if (!check(ctx, TOK_STR)) {
+      unexpectedToken(ctx, tok);
+
+      return newInterpol(ctx->types, tok, interpolExpr, NULL);
+    }
+
+    next = str(ctx);
+  }
+
+  return newInterpol(ctx->types, tok, interpolExpr, next);
+  */
+}
+
+bool compile(VM *vm, const char *fname, const char *src, Chunk *ch) {
   ErrMod mod = newErrMod(fname, src);
-  Ctx ctx = newCtx(mod, ch);
+  Ctx ctx = newCtx(vm, mod, ch);
 
   advance(&ctx);
   Node *ast = expr(&ctx);
@@ -602,14 +660,9 @@ bool compile(const char *fname, const char *src, Chunk *ch) {
 
   if (!hadErrs) {
 #ifdef DEBUG_COMPILE
-    fprintf(stderr, "unoptimized:\n");
     prettyPrint(ast);
 #endif
-    optNode(ast);
-#ifdef DEBUG_COMPILE
-    fprintf(stderr, "optimized:\n");
-    prettyPrint(ast);
-#endif
+
     emitNode(&ctx, ast);
   }
 

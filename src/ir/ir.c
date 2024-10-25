@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <stdio.h>
 
 #include "ir.h"
 
@@ -11,6 +12,34 @@ static void freeFloat(Float *node) {
   node->value = 0;
   node->loc = newLoc();
 }
+
+static void freeBool(Bool *node) {
+  node->value = false;
+  node->loc = newLoc();
+}
+
+static void freeStr(Str *node) {
+  if (node->ownsLexeme) {
+    free((char *)node->str.lexeme);
+  } 
+
+  node->str = emptyTok();
+  node->ownsLexeme = false;
+}
+
+/*
+static void freeInterpol(Interpol *node) {
+  if (node->ownsLexeme) {
+    free((char *)node->str.lexeme);
+  }
+
+  node->str = emptyTok();
+  node->ownsLexeme = false;
+
+  freeNode(node->expr);
+  freeNode(node->next);
+}
+*/
 
 static void freeUnOp(UnOp *node) {
   node->op = emptyTok();
@@ -39,12 +68,16 @@ static Type inferBinOp(TypeTable *table, BinOp node) {
 
   switch (node.op.type) {
     case TOK_PLUS:
+      if (leftType.kind == TYPE_STR && rightType.kind == TYPE_STR) {
+        return *table->strType; 
+      }
+
+      __attribute__ ((fallthrough));
+      // else: fallthrough
+      // |
+      // v
     case TOK_MINUS:
     case TOK_STAR:
-      /* 
-      for TOK_PLUS:
-      if (leftType.kind == TYPE_STR || rightType.kind == TYPE_STR)
-      */
       if (typesMatch(leftType, rightType)) {
         return leftType;
       }
@@ -130,6 +163,43 @@ Node *newNil(TypeTable *table, Loc loc) {
   return node;
 }
 
+Node *newStr(TypeTable *table, Tok tok) {
+  Str str = {
+    .str = tok,
+    .ownsLexeme = false
+  };
+
+  Node *node = malloc(sizeof (*node));
+  node->type = NODE_STR;
+  node->valType = unknownType();
+  node->valType = *table->strType;
+
+  node->as.str = str;
+
+  return node;
+}
+
+/*
+Node *newInterpol(TypeTable *table, Tok tok, Node *expr, Node *next) {
+  Interpol interpol = {
+    .str = tok,
+    .expr = expr,
+    .next = next
+  };
+
+  Node *node = malloc(sizeof (*node));
+  node->type = NODE_INTERPOL;
+  node->valType = unknownType();
+  node->valType = *table->strType;
+
+  node->as.interpol = interpol;
+
+  fprintf(stderr, "node: %p\n", (void *)node);
+  
+  return node;
+}
+*/
+
 Node *newUnOp(TypeTable *table, Tok op, UnOpType opType, Node *operand) {
   UnOp unOp = {
     .op = op,
@@ -165,6 +235,8 @@ Node *newBinOp(TypeTable *table, Node *left, Tok op, Node *right) {
 }
 
 void freeNode(Node *node) {
+  fprintf(stderr, "freeing: %p\n", (void *)node);
+
   switch (node->type) {
     case NODE_INT:
       freeInt(&NODE_AS_INT(node));
@@ -173,16 +245,31 @@ void freeNode(Node *node) {
     case NODE_FLOAT:
       freeFloat(&NODE_AS_FLOAT(node));
       break;
+
+    case NODE_BOOL:
+      freeBool(&NODE_AS_BOOL(node));
+      break;
     
+    case NODE_NIL:
+      node->as.nilLoc = newLoc();
+      break;
+
+    case NODE_STR:
+      freeStr(&NODE_AS_STR(node));
+      break;
+    
+    /*
+    case NODE_INTERPOL:
+      freeInterpol(&NODE_AS_INTERPOL(node));
+      break;
+    */
+
     case NODE_UNOP:
       freeUnOp(&NODE_AS_UNOP(node));
       break;
 
     case NODE_BINOP:
       freeBinOp(&NODE_AS_BINOP(node));
-      break;
-    
-    default:
       break;
   }
 
@@ -246,6 +333,14 @@ Loc getLoc(Node *node) {
 
     case NODE_NIL:
       return NODE_AS_NIL(node);
+
+    case NODE_STR:
+      return NODE_AS_STR(node).str.loc;
+
+    /*
+    case NODE_INTERPOL:
+      return NODE_AS_INTERPOL(node).str.loc;
+    */
   }
 
   return newLoc();
@@ -266,6 +361,17 @@ Loc getFullLoc(Node *node) {
 
       return mergeLocs(unOp.op.loc, getFullLoc(unOp.operand));
     }
+
+    /*
+    case NODE_INTERPOL: {
+      Interpol interpol = NODE_AS_INTERPOL(node);
+
+      return mergeLocs(
+        interpol.str.loc,
+        mergeLocs(getFullLoc(interpol.expr), getFullLoc(interpol.next))
+      );
+    }
+    */
     
     default:
       return getLoc(node);

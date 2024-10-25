@@ -6,7 +6,6 @@ add_executable(neve
   src/compiler/compiler.c
   src/compiler/ctx.c
   src/compiler/emit.c
-  src/compiler/opt.c
   src/err/err.c
   src/err/render.c
   src/ir/ir.c
@@ -16,6 +15,7 @@ add_executable(neve
   src/lexer/lexer.c
   src/mem/mem.c
   src/runtime/val.c
+  src/runtime/obj.c
   src/vm/debug.c
   src/vm/chunk.c
   src/vm/vm.c
