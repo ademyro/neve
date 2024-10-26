@@ -1,4 +1,5 @@
-build/
+neve/build/
+neve/.clangd
 .vscode/
 .clang-format
 .clangd

@@ -235,8 +235,6 @@ Node *newBinOp(TypeTable *table, Node *left, Tok op, Node *right) {
 }
 
 void freeNode(Node *node) {
-  fprintf(stderr, "freeing: %p\n", (void *)node);
-
   switch (node->type) {
     case NODE_INT:
       freeInt(&NODE_AS_INT(node));
