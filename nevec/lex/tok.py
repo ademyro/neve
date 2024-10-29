@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 from enum import Enum, auto
 from typing import Optional
-from typing_extensions import Self
 
 @dataclass
 class Loc:
@@ -27,7 +26,7 @@ class Loc:
         self.col += self.length
         self.length = 0
 
-    def __eq__(self, other: Self):
+    def __eq__(self, other: "Loc"):
         return (
             self.col == other.col and
             self.line == other.line and
@@ -104,11 +103,11 @@ class TokType(Enum):
     EOF = auto()
 
     @staticmethod
-    def match(seq: str) -> Optional[Self]:
+    def match(seq: str) -> Optional["TokType"]:
         return TokTypes.TOKS.get(seq) 
 
     @staticmethod
-    def match_keyword(id: str) -> Optional[Self]:
+    def match_keyword(id: str) -> Optional["TokType"]:
         return TokTypes.KEYWORDS.get(id)
 
 class TokTypes:
