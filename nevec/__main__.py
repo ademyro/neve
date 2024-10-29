@@ -1,6 +1,6 @@
 import sys
 
-from nevec.lex.lex import Lex
+from nevec.lex.lex import Lex, TokType
 
 if __name__ == "__main__":
     args = sys.argv
@@ -15,4 +15,14 @@ if __name__ == "__main__":
     with open(filename) as f:
         code = f.read()
         lex = Lex(code)
+
+
+        tok = lex.next()
+        toks = [tok]
+
+        while tok.type != TokType.EOF:
+            tok = lex.next()
+            toks.append(tok) 
+
+        print(toks)
 
