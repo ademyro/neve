@@ -1,5 +1,8 @@
 neve/build/
 neve/.clangd
+__pycache__/
+.pytest_cache
+.pytest.ini
 .vscode/
 .clang-format
 .clangd
