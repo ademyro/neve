@@ -1,4 +1,0 @@
-/home/ademyro/projects/c/neve/build/CMakeFiles/neve.dir
-/home/ademyro/projects/c/neve/build/CMakeFiles/clang-tidy-check.dir
-/home/ademyro/projects/c/neve/build/CMakeFiles/edit_cache.dir
-/home/ademyro/projects/c/neve/build/CMakeFiles/rebuild_cache.dir
