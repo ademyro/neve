@@ -1,10 +1,10 @@
-fun block
+do # block
   var a = "before"
-  print a # expect: before
+  puts a # expect: before
 
   a = "after"
-  print a # expect: after
+  puts a # expect: after
 
-  print a = "arg" # expect: arg
-  print a # expect: arg
+  puts a = "arg" # expect: arg
+  puts a # expect: arg
 end

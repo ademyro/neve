@@ -4,6 +4,6 @@ var c = "c"
 
 # Assignment is right-associative.
 a = b = c
-log a # expect: c
-log b # expect: c
-log c # expect: c 
+puts a # expect: c
+puts b # expect: c
+puts c # expect: c 
