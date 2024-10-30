@@ -170,3 +170,34 @@ class TestLex:
                 TokType.EOF
             ]
         )
+
+    def test_float(self):
+        input = ".09\n1.23\n1.2.3\n1.times\n1.2.times\n1.2.3.times"
+        
+        lex = Lex(input)
+        toks = all_toks(lex)
+
+        print(list(map(lambda t: t.type, toks)))
+        assert all_similar(
+            toks,
+            [
+                TokType.FLOAT,
+                TokType.NEWLINE,
+                TokType.FLOAT,
+                TokType.NEWLINE,
+                TokType.ERR,
+                TokType.NEWLINE,
+                TokType.INT,
+                TokType.DOT,
+                TokType.ID,
+                TokType.NEWLINE,
+                TokType.FLOAT,
+                TokType.DOT,
+                TokType.ID,
+                TokType.NEWLINE,
+                TokType.ERR,
+                TokType.DOT,
+                TokType.ID,
+                TokType.EOF
+            ]
+        )

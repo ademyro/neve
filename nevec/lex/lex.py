@@ -27,6 +27,8 @@ class CharQueue:
 
 class Lex:
     MAX_INTERPOL_DEPTH = 255
+    DIGITS = "1234567890"
+    WS = " \r\t"
 
     def __init__(self, code: str):
         self.code: CharQueue = CharQueue(code)
@@ -56,6 +58,14 @@ class Lex:
     def peek(self) -> Optional[str]:
         return self.code.peek()
 
+    def discard_all(self, chars: str):
+        if self.char not in chars:
+            self.sync()
+            return
+        
+        self.advance()
+        self.discard_all(chars)
+
     def new_tok(self, type: TokType) -> Tok:
         return Tok(type, "".join(self.lexeme), self.loc.copy())
 
@@ -70,7 +80,7 @@ class Lex:
         self.skip_ws()
         self.sync()
         
-        if self.on_digit():
+        if self.on_digit() or self.on_float():
             return self.number()
 
         if self.on_alpha():
@@ -98,22 +108,18 @@ class Lex:
         return self.simple_tok()
         
     def skip_ws(self):
-        if not self.on_ws():
-            return
-        
         if self.char == "#":
             self.skip_comment()
         
-        self.advance()
-        self.skip_ws()
+        self.discard_all(Lex.WS)
 
     def skip_comment(self):
         if self.char == '\n':
+            self.advance()
             self.loc.newline()
             return
         
         self.advance()
-        
         self.skip_comment()
 
     def simple_tok(self) -> Tok:
@@ -145,25 +151,34 @@ class Lex:
         return self.new_tok(new_tok_type)
 
     def number(self) -> Tok:
-        found_dot = False
+        while self.on_digit():
+            self.advance()             
 
-        while not self.is_at_end() and self.on_digit():
-            if self.char == ".":
-                if not self.found_dot:
-                    found_dot = True
-                else:
-                    break
-            
+        is_float = self.on_float()
+
+        if is_float:
             self.advance()
 
-        lexeme = "".join(self.lexeme)
-        tok = Tok(
-            TokType.FLOAT if found_dot else TokType.INT,
+            while self.on_digit():
+                self.advance()
+        
+        # still on_float() => something like 1.2.3
+        if self.on_float():
+            # skip the "."
+            self.advance()
 
+            self.discard_all(Lex.DIGITS)
+            return self.err("a float may not have more than one decimal portion")
+
+        lexeme = "".join(self.lexeme)
+         
+        tok = Tok(
+            TokType.FLOAT if is_float else TokType.INT,
+            
             lexeme,
             self.loc.copy(),
 
-            float(lexeme) if found_dot else int(lexeme)
+            float(lexeme) if is_float else int(lexeme)
         )
 
         return tok
@@ -224,10 +239,22 @@ class Lex:
         return interpol_tok 
 
     def on_ws(self):
-        return self.char in " \r\t#"
+        return self.char in Lex.WS or self.char == "#"
     
     def on_digit(self):
-        return self.char in "1234567890."
+        return self.is_digit(self.char)
+    
+    def on_float(self):
+        return self.char == "." and self.is_digit(self.peek())
 
     def on_alpha(self):
-        return self.char in string.ascii_letters or self.char == '_'
+        return (
+            self.char is not None and 
+            (
+                self.char in string.ascii_letters or 
+                self.char == '_'
+            )
+        )
+
+    def is_digit(self, char: str):
+        return char is not None and char in Lex.DIGITS
