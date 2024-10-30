@@ -1,0 +1,6 @@
+class Foo
+end
+
+fun main
+  puts Foo
+end

@@ -1,0 +1,43 @@
+file(REMOVE_RECURSE
+  "CMakeFiles/neve.dir/src/compiler/compiler.c.o"
+  "CMakeFiles/neve.dir/src/compiler/compiler.c.o.d"
+  "CMakeFiles/neve.dir/src/compiler/ctx.c.o"
+  "CMakeFiles/neve.dir/src/compiler/ctx.c.o.d"
+  "CMakeFiles/neve.dir/src/compiler/emit.c.o"
+  "CMakeFiles/neve.dir/src/compiler/emit.c.o.d"
+  "CMakeFiles/neve.dir/src/err/err.c.o"
+  "CMakeFiles/neve.dir/src/err/err.c.o.d"
+  "CMakeFiles/neve.dir/src/err/render.c.o"
+  "CMakeFiles/neve.dir/src/err/render.c.o.d"
+  "CMakeFiles/neve.dir/src/ir/ir.c.o"
+  "CMakeFiles/neve.dir/src/ir/ir.c.o.d"
+  "CMakeFiles/neve.dir/src/ir/pretty.c.o"
+  "CMakeFiles/neve.dir/src/ir/pretty.c.o.d"
+  "CMakeFiles/neve.dir/src/ir/type.c.o"
+  "CMakeFiles/neve.dir/src/ir/type.c.o.d"
+  "CMakeFiles/neve.dir/src/lexer/lexer.c.o"
+  "CMakeFiles/neve.dir/src/lexer/lexer.c.o.d"
+  "CMakeFiles/neve.dir/src/lexer/tok.c.o"
+  "CMakeFiles/neve.dir/src/lexer/tok.c.o.d"
+  "CMakeFiles/neve.dir/src/main/main.c.o"
+  "CMakeFiles/neve.dir/src/main/main.c.o.d"
+  "CMakeFiles/neve.dir/src/mem/mem.c.o"
+  "CMakeFiles/neve.dir/src/mem/mem.c.o.d"
+  "CMakeFiles/neve.dir/src/runtime/obj.c.o"
+  "CMakeFiles/neve.dir/src/runtime/obj.c.o.d"
+  "CMakeFiles/neve.dir/src/runtime/val.c.o"
+  "CMakeFiles/neve.dir/src/runtime/val.c.o.d"
+  "CMakeFiles/neve.dir/src/vm/chunk.c.o"
+  "CMakeFiles/neve.dir/src/vm/chunk.c.o.d"
+  "CMakeFiles/neve.dir/src/vm/debug.c.o"
+  "CMakeFiles/neve.dir/src/vm/debug.c.o.d"
+  "CMakeFiles/neve.dir/src/vm/vm.c.o"
+  "CMakeFiles/neve.dir/src/vm/vm.c.o.d"
+  "neve"
+  "neve.pdb"
+)
+
+# Per-language clean rules from dependency scanning.
+foreach(lang C)
+  include(CMakeFiles/neve.dir/cmake_clean_${lang}.cmake OPTIONAL)
+endforeach()

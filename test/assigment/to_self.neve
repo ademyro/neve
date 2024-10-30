@@ -1,10 +1,10 @@
 class Foo
-  fun assign_self_err(var self)
+  fun assign_self_err(self var)
     # this should be an error
     self = "value"
   end
 
-  fun assign_self_okay(var self)
+  fun assign_self_okay(self var)
     # this shouldn't 
     self = Foo with ?
   end
