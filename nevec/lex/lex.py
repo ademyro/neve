@@ -59,7 +59,7 @@ class Lex:
         return self.code.peek()
 
     def discard_all(self, chars: str):
-        if self.char not in chars:
+        if self.is_at_end() or self.char not in chars:
             self.sync()
             return
         
@@ -73,12 +73,12 @@ class Lex:
         return Tok(TokType.ERR, "".join(self.lexeme), self.loc.copy(), msg)
 
     def next(self) -> Tok:
+        self.skip_ws()
+        self.sync()
+
         if self.char is None:
             self.sync()
             return self.new_tok(TokType.EOF)
-
-        self.skip_ws()
-        self.sync()
         
         if self.on_digit() or self.on_float():
             return self.number()
@@ -119,6 +119,9 @@ class Lex:
             self.loc.newline()
             return
         
+        if self.is_at_end():
+            return
+        
         self.advance()
         self.skip_comment()
 
@@ -145,7 +148,7 @@ class Lex:
 
         if new_tok_type is None:
             self.advance()
-            return self.err("unexpected character")
+            return self.err(f"unexpected character")
 
         self.advance()
         return self.new_tok(new_tok_type)

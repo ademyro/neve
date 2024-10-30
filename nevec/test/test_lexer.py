@@ -102,6 +102,19 @@ class TestLex:
             ]
         )
 
+    def test_comment_2(self):
+        input = "#"
+
+        lex = Lex(input)
+        toks = all_toks(lex)
+
+        assert all_similar(
+            toks,
+            [
+                TokType.EOF
+            ]
+        )
+
     def test_empty(self):
         input = ""
 
