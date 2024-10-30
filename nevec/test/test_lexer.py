@@ -190,7 +190,6 @@ class TestLex:
         lex = Lex(input)
         toks = all_toks(lex)
 
-        print(list(map(lambda t: t.type, toks)))
         assert all_similar(
             toks,
             [
@@ -210,6 +209,36 @@ class TestLex:
                 TokType.NEWLINE,
                 TokType.ERR,
                 TokType.DOT,
+                TokType.ID,
+                TokType.EOF
+            ]
+        )
+
+    def test_semicolon(self):
+        input = "let a = do\n  puts \"Hello, world!\"\nend\na; a; a; a"
+
+        lex = Lex(input)
+        toks = all_toks(lex)
+
+        assert all_similar(
+            toks,
+            [
+                TokType.LET,
+                TokType.ID,
+                TokType.ASSIGN,
+                TokType.DO,
+                TokType.NEWLINE,
+                TokType.PUTS,
+                TokType.STR,
+                TokType.NEWLINE,
+                TokType.END,
+                TokType.NEWLINE,
+                TokType.ID,
+                TokType.SEMICOL,
+                TokType.ID,
+                TokType.SEMICOL,
+                TokType.ID,
+                TokType.SEMICOL,
                 TokType.ID,
                 TokType.EOF
             ]
