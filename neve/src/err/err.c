@@ -3,11 +3,11 @@
 #include "err.h"
 #include "render.h"
 
-ErrMod newErrMod(const char *fname, const char *src) {
-  RenderCtx ctx = newRenderCtx(newLoc());
+ErrMod newErrMod(const char *fname) {
+  RenderCtx ctx = newRenderCtx(1);
 
   ErrMod mod = {
-    .src = src,
+    // .src = src,
     .fname = fname,
     .ctx = ctx,
     .err = ERR_CLI
@@ -16,16 +16,16 @@ ErrMod newErrMod(const char *fname, const char *src) {
   return mod;
 }
 
-void setNewErr(ErrMod *mod, Err id, Loc loc) {
-  setErrLoc(mod, loc);
+void setNewErr(ErrMod *mod, Err id, int line) {
+  setErrLoc(mod, line);
   setErr(mod, id);
   
   mod->errCount++;
 }
 
-void setErrLoc(ErrMod *mod, Loc loc) {
-  mod->loc = loc;
-  mod->ctx = newRenderCtx(loc);
+void setErrLoc(ErrMod *mod, int line) {
+  mod->line = line;
+  mod->ctx = newRenderCtx(line);
 }
 
 void setErr(ErrMod *mod, Err id) {
@@ -58,21 +58,17 @@ void showOffendingLine(ErrMod mod, const char *fmt, ...) {
 
   va_start(args, fmt);
 
-  highlightErr(mod.ctx, fmt, args);
-
   va_end(args);
 }
 
-void showNote(ErrMod mod, Loc loc, const char *fmt, ...) {
+void showNote(ErrMod mod, int line, const char *fmt, ...) {
   va_list args;
 
-  mod.ctx.loc = loc;
+  mod.ctx.line = line;
 
   renderRegularLine(mod.ctx, mod.src);
 
   va_start(args, fmt); 
-
-  highlightNote(mod.ctx, fmt, args);
 
   va_end(args);
 }
@@ -85,45 +81,4 @@ void showHint(ErrMod mod, const char *fmt, ...) {
   renderHint(mod.ctx, fmt, args);
 
   va_end(args);
-}
-
-void suggestFix(ErrMod mod, Loc fixLoc, const char *fmt, ...) {
-  va_list args;
-
-  va_start(args, fmt);
-
-  renderModifiedLine(fixLoc, mod.src, fmt, args);
-  highlightChange(fixLoc, fmt, args);
-
-  va_end(args);
-}
-
-void suggestFixAbove(ErrMod mod, const char *fmt, ...) {
-  va_list args;
-
-  const Loc fixLoc = mod.loc;
-
-  Loc lineBelow = newLoc();
-  lineBelow.line = fixLoc.line + 1;
-
-  va_start(args, fmt);
-
-  renderFix(fixLoc, fmt, args);
-
-  RenderCtx belowCtx = newRenderCtx(lineBelow);
-  renderLine(belowCtx, mod.src);
-
-  va_end(args);
-}
-
-void suggestExample(ErrMod mod, const char *fmt, ...) {
-  va_list args;
-
-  va_start(args, fmt);
-  renderFmtLine(mod.ctx, fmt, args);
-  va_end(args);
-}
-
-void endErr(ErrMod mod) {
-  showHint(mod, "confused?  run " WHITE "`neve --whats E%03d`", mod.err);
 }

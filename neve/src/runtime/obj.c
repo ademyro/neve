@@ -4,9 +4,10 @@
 #include "mem.h"
 #include "obj.h"
 
-#define ALLOC_OBJ(vm, type, objType) (type *)allocObj(vm, sizeof (type), objType)
+#define ALLOC_OBJ(vm, type, objType)                        \
+  (type *)allocObj(vm, sizeof (type), objType)
 
-static Obj *allocObj(VM *vm, size_t size, ObjType type) {
+static Obj *allocObj(NeveVM *vm, size_t size, ObjType type) {
   Obj *obj = (Obj *)reallocate(NULL, 0, size);
   obj->type = type;
 
@@ -16,7 +17,7 @@ static Obj *allocObj(VM *vm, size_t size, ObjType type) {
   return obj;
 }
 
-ObjStr *allocStr(VM *vm, bool ownsStr, const char *chars, size_t length) {
+ObjStr *allocStr(NeveVM *vm, bool ownsStr, const char *chars, size_t length) {
   ObjStr *str = ALLOC_OBJ(vm, ObjStr, OBJ_STR);
   str->ownsStr = ownsStr;
   str->length = length;

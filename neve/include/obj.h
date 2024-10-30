@@ -37,7 +37,7 @@ static inline bool isObjType(Val val, ObjType type) {
 }
 */
 
-ObjStr *allocStr(VM *vm, bool ownsStr, const char *chars, size_t length);
+ObjStr *allocStr(NeveVM *vm, bool ownsStr, const char *chars, size_t length);
 
 void printObj(Val val);
 

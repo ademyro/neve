@@ -68,18 +68,11 @@ static void writeLinePipes(const int lineDigits, const int line) {
   writef("%*d | " RESET, lineDigits, line); 
 }
 
-static void highlight(size_t length, char highlighter) {
-  for (size_t i = 0; i < length; i++) {
-    fputc(highlighter, stderr);
-  } 
-
-  fputc(' ', stderr);
-}
-
-RenderCtx newRenderCtx(Loc loc) {
+RenderCtx newRenderCtx(int line) {
   RenderCtx ctx = {
-    .loc = loc,
-    .lineDigits = digitsIn(loc.line + 1)
+    .line = line,
+    // +1 in case we want to render a line below.
+    .lineDigits = digitsIn(line + 1)
   };
 
   return ctx;
@@ -95,7 +88,7 @@ void renderErrMsg(int id, const char *fmt, va_list args) {
     return;
   }
 
-  writef(RED " [E%03d]", id);
+  writef(RED " [RE%03d]", id);
 
   endFormat();
 }
@@ -103,66 +96,23 @@ void renderErrMsg(int id, const char *fmt, va_list args) {
 void renderLocus(RenderCtx ctx, const char *fname) {
   write(BLUE "   in" WHITE ": ");
 
-  writef("%s:%d:%d", fname, ctx.loc.line, ctx.loc.col);
+  writef("%s:%d", fname, ctx.line);
 
   endFormat();
 }
 
 void renderLine(RenderCtx ctx, const char *src) {
-  Loc loc = ctx.loc;
-
-  const int line = loc.line;
+  const int line = ctx.line;
   const char *lineStart = findLine(src, line);
   const int lineEnd = (int)strcspn(lineStart, "\n");
 
-  writeLinePipes(ctx.lineDigits, loc.line);
-
-  int col = loc.col - 1;
-  int errEnd = col + (int)loc.length;
+  writeLinePipes(ctx.lineDigits, line);
 
   if (lineStart == NULL) {
     write(RED "could not find line");
   }
 
-  writeFrom(lineStart, col);
-  write(RED);
-  writeFrom(lineStart + col, (int)loc.length);
-  write(RESET);
-  writeFrom(lineStart + errEnd, lineEnd - errEnd);
-
-  endFormat();
-}
-
-void highlightErr(RenderCtx ctx, const char *fmt, va_list args) {
-  writef(BLUE "%*s |", ctx.lineDigits, "");
-  writef("%*s" RED, ctx.loc.col, "");
-
-  highlight(ctx.loc.length, '^');
-
-  vfprintf(stderr, fmt, args);
-
-  endFormat();
-}
-
-void highlightNote(RenderCtx ctx, const char *fmt, va_list args) {
-  writef(BLUE "%*s |", ctx.lineDigits, "");
-  writef("%*s", ctx.loc.col, "");
-
-  highlight(ctx.loc.length, '-');
-
-  vfprintf(stderr, fmt, args);
-
-  endFormat();
-}
-
-void highlightChange(Loc fixLoc, const char *fmt, va_list args) {
-  size_t changeLength = (size_t)vsnprintf(NULL, 0, fmt, args);
-
-  const int newLineDigits = digitsIn(fixLoc.col) - 1;
-  writef(BLUE "%*s |", newLineDigits, ""); 
-  writef("%*s" GREEN, fixLoc.col + 1, "");
-
-  highlight(changeLength, '+');
+  writeFrom(lineStart, lineEnd);
 
   endFormat();
 }
@@ -175,48 +125,8 @@ void renderHint(RenderCtx ctx, const char *fmt, va_list args) {
   endFormat();
 }
 
-void renderModifiedLine(
-  Loc fixLoc, 
-  const char *src, 
-  const char *fmt, 
-  va_list args
-) {
-  int line = fixLoc.line;
-  const char *lineStart = findLine(src, line);
-  int lineEnd = (int)strcspn(lineStart, "\n\0") - 1;
-
-  const int newLineDigits = digitsIn(line);
-
-  writeLinePipes(newLineDigits, line);
-
-  int col = fixLoc.col;
-
-  writeFrom(lineStart, col);
-  write(GREEN);
-  vfprintf(stderr, fmt, args);
-  write(RESET);
-
-  if (col < lineEnd) {
-    writeFrom(lineStart + col, lineEnd);
-  }
-
-  endFormat();
-}
-
-void renderFix(Loc fixLoc, const char *fmt, va_list args) {
-  const int newLineDigits = digitsIn(fixLoc.line);
-
-  writeLinePipes(newLineDigits, fixLoc.line);
-
-  write(GREEN);
-  vfprintf(stderr, fmt, args);
-  highlightChange(fixLoc, fmt, args);
-
-  endFormat();
-}
-
 void renderFmtLine(RenderCtx ctx, const char *fmt, va_list args) {
-  writeLinePipes(ctx.lineDigits, ctx.loc.line);
+  writeLinePipes(ctx.lineDigits, ctx.line);
 
   vfprintf(stderr, fmt, args);
 
@@ -225,26 +135,17 @@ void renderFmtLine(RenderCtx ctx, const char *fmt, va_list args) {
 }
 
 void renderRegularLine(RenderCtx ctx, const char *src) {
-  Loc loc = ctx.loc;
-
-  const int line = loc.line;
+  const int line = ctx.line;
   const char *lineStart = findLine(src, line);
   const int lineEnd = (int)strcspn(lineStart, "\n");
 
-  writeLinePipes(ctx.lineDigits, loc.line);
-
-  int col = loc.col - 1;
-  int errEnd = col + (int)loc.length;
+  writeLinePipes(ctx.lineDigits, ctx.line);
 
   if (lineStart == NULL) {
     write(RED "could not find line");
   }
 
-  writeFrom(lineStart, col);
-  write(BLUE);
-  writeFrom(lineStart + col, (int)loc.length);
-  write(RESET);
-  writeFrom(lineStart + errEnd, lineEnd - errEnd);
+  writeFrom(lineStart, lineEnd);
 
   endFormat();
 }

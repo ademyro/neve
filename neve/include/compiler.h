@@ -1,7 +1,6 @@
 #ifndef COMPILER_H
 #define COMPILER_H
 
-#include "tok.h"
 #include "chunk.h"
 #include "vm.h"
 
@@ -16,15 +15,6 @@
 
 #define IS_PANICKING(ctx) ((ctx)->parser.isPanicking)
 
-typedef struct {
-  Tok curr;
-  Tok prev;
-
-  bool isPanicking;
-} Parser;
-
-Parser newParser();
-
-bool compile(VM *vm, const char *fname, const char *src, Chunk *ch);
+bool compile(NeveVM *vm, const char *fname, const uint8_t *bytes, Chunk *ch);
 
 #endif

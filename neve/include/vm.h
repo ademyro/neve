@@ -14,22 +14,22 @@ typedef struct {
   Val *stackTop;
 
   Obj *objs;
-} VM;
+} NeveVM;
 
 typedef enum {
   AFTERMATH_OK,
-  AFTERMATH_COMPILE_ERR,
+  AFTERMATH_FILE_FORMAT_ERR,
   AFTERMATH_RUNTIME_ERR
 } Aftermath;
 
-VM newVM();
-void freeVM(VM *vm);
+NeveVM newVM();
+void freeVM(NeveVM *vm);
 
-void resetStack(VM *vm);
+void resetStack(NeveVM *vm);
 
-Aftermath interpret(const char *fname, VM *vm, const char *src);
+Aftermath interpret(const char *fname, NeveVM *vm, const uint8_t *bytes);
 
-void push(VM *vm, Val val);
-Val pop(VM *vm);
+void push(NeveVM *vm, Val val);
+Val pop(NeveVM *vm);
 
 #endif

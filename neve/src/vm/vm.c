@@ -12,7 +12,7 @@
 #endif
 
 #ifdef DEBUG_EXEC
-static void printStack(VM *vm) {
+static void printStack(NeveVM *vm) {
   printf("    ");
 
   for (Val *v = vm->stack; v < vm->stackTop; v++) {
@@ -25,24 +25,24 @@ static void printStack(VM *vm) {
 }
 #endif
 
-VM newVM() {
-  VM vm = {
+NeveVM newVM() {
+  NeveVM vm = {
     .objs = NULL
   };
 
   return vm;
 }
 
-void freeVM(VM *vm) {
+void freeVM(NeveVM *vm) {
   freeObjs(vm->objs);
   vm->objs = NULL;
 }
 
-void resetStack(VM *vm) {
+void resetStack(NeveVM *vm) {
   vm->stackTop = vm->stack;
 }
 
-static void concat(VM *vm) {
+static void concat(NeveVM *vm) {
   ObjStr *b = VAL_AS_STR(pop(vm));
   ObjStr *a = VAL_AS_STR(pop(vm));
 
@@ -59,7 +59,7 @@ static void concat(VM *vm) {
   push(vm, OBJ_VAL(result));
 }
 
-static Aftermath run(VM *vm) {
+static Aftermath run(NeveVM *vm) {
 #define READ_BYTE() (*vm->ip++)
 #define READ_CONST() (vm->ch->consts.consts[READ_BYTE()])
 #define BIN_OP(valType, op)                                     \
@@ -294,13 +294,13 @@ static Aftermath run(VM *vm) {
 #undef BIT_OP
 }
 
-Aftermath interpret(const char *fname, VM *vm, const char *src) {
+Aftermath interpret(const char *fname, NeveVM *vm, const uint8_t *bytes) {
   Chunk ch = newChunk();
 
-  if (!compile(vm, fname, src, &ch)) {
+  if (!compile(vm, fname, bytes, &ch)) {
     freeChunk(&ch); 
 
-    return AFTERMATH_COMPILE_ERR;
+    return AFTERMATH_FILE_FORMAT_ERR;
   }
 
   vm->ch = &ch;
@@ -313,13 +313,13 @@ Aftermath interpret(const char *fname, VM *vm, const char *src) {
   return aftermath;
 }
 
-void push(VM *vm, Val val) {
+void push(NeveVM *vm, Val val) {
   *vm->stackTop = val;
 
   vm->stackTop++;
 }
 
-Val pop(VM *vm) {
+Val pop(NeveVM *vm) {
   vm->stackTop--;
 
   return *vm->stackTop;
