@@ -15,7 +15,7 @@ Chunk newChunk() {
 
 void writeChunk(Chunk *ch, uint8_t byte, int line) {
   if (ch->next == ch->cap) {
-    size_t oldCap = ch->cap;
+    uint32_t oldCap = ch->cap;
 
     ch->cap = GROW_CAP(oldCap);
     ch->code = GROW_ARR(
@@ -34,7 +34,6 @@ void writeChunk(Chunk *ch, uint8_t byte, int line) {
 void freeChunk(Chunk *ch) {
   freeValArr(&ch->consts);
   freeLineArr(&ch->lines);
-  FREE_ARR(uint8_t, ch->code, ch->cap);
 
   ch->code = NULL;
   ch->cap = 0;
@@ -72,7 +71,7 @@ LineArr newLineArr() {
   return arr;
 }
 
-void writeLineArr(LineArr *arr, int line, size_t offset) {
+void writeLineArr(LineArr *arr, int line, uint32_t offset) {
   if (arr != NULL && arr->next > 0) {
     int lastLine = arr->lines[arr->next - 1].line;
 
@@ -82,7 +81,7 @@ void writeLineArr(LineArr *arr, int line, size_t offset) {
   }
 
   if (arr->next == arr->cap) {
-    size_t oldCap = arr->cap;
+    uint32_t oldCap = arr->cap;
 
     arr->cap = GROW_CAP(oldCap);
     arr->lines = GROW_ARR(
@@ -108,15 +107,19 @@ void freeLineArr(LineArr *arr) {
   arr->next = 0;
 }
 
-int getLine(Chunk *ch, size_t offset) {
+int getLine(Chunk *ch, uint32_t offset) {
   LineArr lines = ch->lines;
 
-  size_t start = 0;
-  size_t end = lines.next - 1;
+  if (lines.lines == NULL) {
+    return -1;
+  }
+
+  uint32_t start = 0;
+  uint32_t end = lines.next - 1;
 
   while (true) {
-    const size_t mid = (start + end) / 2;
-    const size_t next = mid + 1;
+    const uint32_t mid = (start + end) / 2;
+    const uint32_t next = mid + 1;
     Line line = lines.lines[mid];
 
     if (offset < line.offset) {

@@ -3,6 +3,7 @@
 
 #include "common.h"
 #include "compiler.h"
+#include "err.h"
 #include "mem.h"
 #include "obj.h"
 #include "vm.h"
@@ -82,7 +83,7 @@ static Aftermath run(NeveVM *vm) {
 #ifdef DEBUG_EXEC
     printStack(vm);
 
-    const size_t offset = (size_t)(vm->ip - vm->ch->code);
+    const uint32_t offset = (uint32_t)(vm->ip - vm->ch->code);
     disasmInstr(vm->ch, offset);
 #endif
 
@@ -98,6 +99,10 @@ static Aftermath run(NeveVM *vm) {
       
       case OP_CONST_LONG: {
         Chunk *ch = vm->ch;
+
+#ifndef DEBUG_EXEC
+        const uint32_t offset = (uint32_t)(vm->ip - vm->ch->code);
+#endif
 
         const uint8_t byteLength = 8;
         const uint32_t constOffset = (uint32_t)(
@@ -282,7 +287,7 @@ static Aftermath run(NeveVM *vm) {
         printVal(pop(vm));
         printf("\n");
         return AFTERMATH_OK;
-      
+
       default:
         // TODO: add an error message
         return AFTERMATH_RUNTIME_ERR;
@@ -305,16 +310,30 @@ Aftermath interpret(const char *fname, NeveVM *vm, Bytecode *bytecode) {
     return AFTERMATH_FILE_FORMAT_ERR;
   }
 
-  /*
   vm->ch = &ch;
   vm->ip = ch.code;
 
   Aftermath aftermath = run(vm);
 
+  if (aftermath != AFTERMATH_OK) {
+    const uint32_t offset = (uint32_t)(vm->ip - vm->ch->code);
+
+    ErrMod mod;
+    bool failed = !runtimeErr(&mod, ERR_CLI, bytecode, offset);
+
+    reportErr(mod, "runtime error");
+
+    if (failed) {
+      cliErr("couldn’t read source file");
+    } else {
+      showOffendingLine(mod);
+    }
+
+    freeErrMod(&mod);
+  }
+
   freeChunk(&ch);
 
-  return aftermath;
-  */
   IGNORE(run);
   return AFTERMATH_OK;
 }

@@ -9,8 +9,8 @@
 
 #define EOF_PADDING_SIZE 16
 // i’m sorry
-#define EOF_PADDING                                          \
-  "\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF"                         \
+#define EOF_PADDING                                           \
+  "\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF"                          \
   "\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF"
 #define EOF_PADDING_BYTE 0xFF
 

@@ -58,14 +58,6 @@ size_t disasmInstr(Chunk *ch, size_t offset) {
   printf("%4zu  ", offset);
 
   const uint8_t instr = ch->code[offset];
-  const int line = getLine(ch, offset);
-  const int prevLine = offset > 0 ? getLine(ch, offset - 1) : -1;
-
-  if (line == prevLine) {
-    printf("   |  ");
-  } else {
-    printf("%4d  ", line);
-  }
 
   switch (instr) {
     case OP_RET:

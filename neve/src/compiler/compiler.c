@@ -3,7 +3,6 @@
 #include <string.h>
 
 #include "compiler.h"
-#include "ctx.h"
 #include "err.h"
 #include "obj.h"
 
@@ -37,6 +36,18 @@ static bool checkMagicNumber(const uint8_t *bytes) {
 
 static bool isValidBytecode(Bytecode *bytecode) {
   return !isBytecodeTruncated(bytecode) && checkMagicNumber(bytecode->bytes);
+}
+
+static size_t skipDebugHeader(const uint8_t *bytes, size_t offset) {
+  uint16_t headerLength;
+  memcpy(&headerLength, bytes + offset, sizeof (uint16_t));
+
+  const size_t opcodeOffset = offset + sizeof (uint16_t) + headerLength;  
+  if (bytes[opcodeOffset - 1] != NEVE_CONST_HEADER_SEPARATOR) {
+    return UNEXPECTED_BYTE;
+  }
+
+  return opcodeOffset;
 }
 
 static size_t readObj(
@@ -123,13 +134,20 @@ static size_t readConst(
   return newOffset;
 }
 
-static bool readConsts(NeveVM *vm, ValArr *arr, Bytecode *bytecode) {
+static bool readConsts(
+  NeveVM *vm, 
+  ValArr *arr, 
+  Bytecode *bytecode, 
+  size_t *finalOffset
+) {
   const uint8_t *bytes = bytecode->bytes;
   size_t offset = sizeof (uint32_t);
 
   while (true) {
     uint8_t byte = bytes[offset];
     if (byte == NEVE_CONST_HEADER_SEPARATOR) {
+      offset++;
+
       break;
     } 
 
@@ -143,18 +161,11 @@ static bool readConsts(NeveVM *vm, ValArr *arr, Bytecode *bytecode) {
     }
   }
 
+  *finalOffset = offset;
   return true;
 }
-#undef UNEXPECTED_BYTE
 
 bool compile(NeveVM *vm, const char *fname, Bytecode *bytecode, Chunk *ch) {
-  ErrMod mod = newErrMod(fname);
-  Ctx ctx = newCtx(vm, mod, ch);
-
-  ErrMod newMod = ctx.errMod;
-
-  IGNORE(newMod);
-
   if (!isValidBytecode(bytecode)) {
     cliErr("%s: unexpected file format", fname);
     cliErr("the bytecode file either contains invalid bytecode or");
@@ -163,21 +174,30 @@ bool compile(NeveVM *vm, const char *fname, Bytecode *bytecode, Chunk *ch) {
     return false;
   }
 
-  ValArr consts = newValArr();
+  ValArr *consts = &ch->consts;
+  size_t offset;
 
-  if (!readConsts(vm, &consts, bytecode)) {
+  if (!readConsts(vm, consts, bytecode, &offset)) {
     cliErr("%s: failed to load constants", fname);
     
-    freeValArr(&consts);
+    freeValArr(consts);
     return false;
   }
 
-  for (size_t i = 0; i < consts.next; i++) {
-    printVal(consts.consts[i]);
-    printf("\n");
+  const size_t debugHeaderOffset = offset;
+  bytecode->debugHeaderOffset = debugHeaderOffset;
+
+  offset = skipDebugHeader(bytecode->bytes, offset);
+
+  if (offset == UNEXPECTED_BYTE) {
+    cliErr("%s: failed to load file information", fname);
+
+    freeValArr(consts);
+    return false;
   }
 
-  freeValArr(&consts);
+  ch->code = (uint8_t *)(bytecode->bytes + offset);
 
   return true;
 }
+#undef UNEXPECTED_BYTE

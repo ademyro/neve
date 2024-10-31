@@ -1,7 +1,6 @@
 #ifndef CHUNK_H
 #define CHUNK_H
 
-#include "common.h"
 #include "val.h"
 
 typedef enum {
@@ -35,24 +34,24 @@ typedef enum {
   OP_LESS,
   OP_GREATER_EQ,
   OP_LESS_EQ,
-  OP_RET
+  OP_RET,
 } OpCode;
 
 typedef struct {
-  size_t offset;
+  uint32_t offset;
   int line;
 } Line;
 
 typedef struct {
-  size_t cap;
-  size_t next;
+  uint32_t cap;
+  uint32_t next;
 
   Line *lines;
 } LineArr;
 
 typedef struct {
-  size_t cap;
-  size_t next;
+  uint32_t cap;
+  uint32_t next;
 
   uint8_t *code;
   ValArr consts;
@@ -67,9 +66,9 @@ void writeConst(Chunk *ch, Val val, int line);
 int addConst(Chunk *ch, Val val);
 
 LineArr newLineArr();
-void writeLineArr(LineArr *arr, int line, size_t offset);
+void writeLineArr(LineArr *arr, int line, uint32_t offset);
 void freeLineArr(LineArr *arr);
 
-int getLine(Chunk *ch, size_t offset);
+int getLine(Chunk *ch, uint32_t offset);
 
 #endif
