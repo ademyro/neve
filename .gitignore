@@ -1,5 +1,6 @@
 neve/build/
 neve/.clangd
+neve/test/test.geada
 __pycache__/
 .pytest_cache
 .pytest.ini
@@ -7,5 +8,6 @@ __pycache__/
 .clang-format
 .clangd
 .DS_Store
+geada_writer.py
 build.sh
 run.sh
