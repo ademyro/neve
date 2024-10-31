@@ -1,10 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "err.h"
 #include "vm.h"
 
-static const uint8_t *readFile(const char *fname) {
+static const uint8_t *readFile(const char *fname, size_t *length) {
   FILE *f = fopen(fname, "rb");
 
   if (f == NULL) {
@@ -33,6 +34,8 @@ static const uint8_t *readFile(const char *fname) {
     exit(1);
   }
 
+  *length = size;
+
   fclose(f);
   return buf;
 }
@@ -41,18 +44,18 @@ static void runFile(const char *fname) {
   NeveVM vm = newVM();
   resetStack(&vm);
 
-  const uint8_t *bytes = readFile(fname);
+  size_t length;
+  const uint8_t *bytes = readFile(fname, &length);
 
-  // Aftermath aftermath = interpret(fname, &vm, bytes); 
+  Bytecode bytecode = newBytecode(bytes, length);
+  Aftermath aftermath = interpret(fname, &vm, &bytecode); 
 
   freeVM(&vm);
   free((uint8_t *)bytes);
 
-  /*
   if (aftermath != AFTERMATH_OK) {
     exit(1);
   }
-  */
 }
 
 int main(const int argc, const char **argv) {

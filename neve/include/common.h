@@ -7,6 +7,16 @@
 
 #define IGNORE(x) (void)(x)
 
+#define EOF_PADDING_SIZE 16
+// i’m sorry
+#define EOF_PADDING                                          \
+  "\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF"                         \
+  "\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF"
+#define EOF_PADDING_BYTE 0xFF
+
+#define NEVE_MAGIC_NUMBER 0xbadbed00
+#define NEVE_CONST_HEADER_SEPARATOR 0x1c 
+
 #define DEBUG_EXEC
 #define DEBUG_COMPILE
 

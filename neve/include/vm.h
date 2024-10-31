@@ -1,6 +1,7 @@
 #ifndef VM_H
 #define VM_H
 
+#include "bytecode.h"
 #include "chunk.h"
 #include "val.h"
 
@@ -27,7 +28,7 @@ void freeVM(NeveVM *vm);
 
 void resetStack(NeveVM *vm);
 
-Aftermath interpret(const char *fname, NeveVM *vm, const uint8_t *bytes);
+Aftermath interpret(const char *fname, NeveVM *vm, Bytecode *bytecode);
 
 void push(NeveVM *vm, Val val);
 Val pop(NeveVM *vm);

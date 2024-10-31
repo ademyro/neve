@@ -24,7 +24,7 @@ struct ObjStr {
   Obj obj; 
 
   bool ownsStr;
-  size_t length;
+  uint32_t length;
   const char *chars;
 };
 
@@ -37,7 +37,7 @@ static inline bool isObjType(Val val, ObjType type) {
 }
 */
 
-ObjStr *allocStr(NeveVM *vm, bool ownsStr, const char *chars, size_t length);
+ObjStr *allocStr(NeveVM *vm, bool ownsStr, const char *chars, uint32_t length);
 
 void printObj(Val val);
 

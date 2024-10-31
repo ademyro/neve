@@ -3,6 +3,7 @@ project(neve) # VERSION 0.0.0-20211225
 
 add_executable(neve
   src/main/main.c
+  src/compiler/bytecode.c
   src/compiler/compiler.c
   src/compiler/ctx.c
   src/err/err.c

@@ -46,7 +46,7 @@ static void concat(NeveVM *vm) {
   ObjStr *b = VAL_AS_STR(pop(vm));
   ObjStr *a = VAL_AS_STR(pop(vm));
 
-  size_t length = a->length + b->length;
+  uint32_t length = a->length + b->length;
 
   char *chars = ALLOC(char, length + 1);
 
@@ -59,6 +59,7 @@ static void concat(NeveVM *vm) {
   push(vm, OBJ_VAL(result));
 }
 
+// NOLINTBEGIN
 static Aftermath run(NeveVM *vm) {
 #define READ_BYTE() (*vm->ip++)
 #define READ_CONST() (vm->ch->consts.consts[READ_BYTE()])
@@ -293,16 +294,18 @@ static Aftermath run(NeveVM *vm) {
 #undef BIN_OP
 #undef BIT_OP
 }
+// NOLINTEND
 
-Aftermath interpret(const char *fname, NeveVM *vm, const uint8_t *bytes) {
+Aftermath interpret(const char *fname, NeveVM *vm, Bytecode *bytecode) {
   Chunk ch = newChunk();
 
-  if (!compile(vm, fname, bytes, &ch)) {
+  if (!compile(vm, fname, bytecode, &ch)) {
     freeChunk(&ch); 
 
     return AFTERMATH_FILE_FORMAT_ERR;
   }
 
+  /*
   vm->ch = &ch;
   vm->ip = ch.code;
 
@@ -311,6 +314,9 @@ Aftermath interpret(const char *fname, NeveVM *vm, const uint8_t *bytes) {
   freeChunk(&ch);
 
   return aftermath;
+  */
+  IGNORE(run);
+  return AFTERMATH_OK;
 }
 
 void push(NeveVM *vm, Val val) {

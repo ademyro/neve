@@ -17,7 +17,7 @@ static Obj *allocObj(NeveVM *vm, size_t size, ObjType type) {
   return obj;
 }
 
-ObjStr *allocStr(NeveVM *vm, bool ownsStr, const char *chars, size_t length) {
+ObjStr *allocStr(NeveVM *vm, bool ownsStr, const char *chars, uint32_t length) {
   ObjStr *str = ALLOC_OBJ(vm, ObjStr, OBJ_STR);
   str->ownsStr = ownsStr;
   str->length = length;
