@@ -129,7 +129,7 @@ class TestLex:
         )
 
     def test_interpol(self):
-        input = "let greeting = \"Hello, #{\"world!  How are #{\"you\"}?\"}\""
+        input = "let greeting = \"Hello, #{\"world!  How are #{\"you\"}? \"}\""
 
         lex = Lex(input)
         toks = all_toks(lex)

@@ -169,7 +169,10 @@ class Str(Expr):
 
     @staticmethod
     def trim_quotes(value: str):
-        return value[1:-1]
+        begin = 1 if value[0] == "\"" else 0
+        end = -1 if value[-1] == "\"" else len(value)
+
+        return value[begin:end]
     
     def infer_type(self) -> Type:
         return Types.STR
@@ -193,7 +196,7 @@ class Interpol(Expr):
             [
                 "\"", 
                 self.left, 
-                " #{", 
+                "#{", 
                 str(self.expr), 
                 "}", 
                 Str.trim_quotes(str(self.next)), 

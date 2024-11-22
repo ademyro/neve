@@ -96,9 +96,10 @@ class Lex:
             
             self.interpol_depth -= 1
 
+            self.advance()
             self.sync()
 
-            return self.string()
+            return self.string(capture_first_char=False)
 
         if self.char == '\n':
             self.advance()
@@ -199,8 +200,9 @@ class Lex:
             else keyword_type
         )
 
-    def string(self):
-        self.advance()
+    def string(self, capture_first_char=True):
+        if capture_first_char:
+            self.advance()
 
         while self.char != '"' and not self.is_at_end():
             self.advance()
