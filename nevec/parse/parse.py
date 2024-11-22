@@ -135,10 +135,13 @@ class Parse:
             case TokType.LPAREN:
                 return self.grouping()
 
+            case TokType.STR:
+                return self.str_lit()
+
         print("primary: unexpected token", tok)
         return Expr(Types.UNKNOWN)
 
-    def int_lit(self) -> Expr:
+    def int_lit(self) -> Int:
         # TODO: allow hexadecimal, binary, and octal integers
         # and implement bounds checking for integers (LONG_MIN, LONG_MAX)
         tok = self.consume()
@@ -147,14 +150,22 @@ class Parse:
 
         return Int(value)
 
-    def float_lit(self) -> Expr:
+    def float_lit(self) -> Float:
         tok = self.consume()
 
         value = float(tok.lexeme)
 
         return Float(value)
+    
+    def str_lit(self) -> Str:
+        tok = self.consume()
 
-    def grouping(self):
+        value = tok.lexeme
+        raw_str = Str.trim_quotes(value)
+
+        return Str(raw_str)
+
+    def grouping(self) -> Parens:
         self.advance()
 
         grouped = self.expr()

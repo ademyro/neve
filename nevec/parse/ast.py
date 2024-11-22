@@ -156,6 +156,22 @@ class Bool(Expr):
         return str(self.value).lower()
 
 
+class Str(Expr):
+    def __init__(self, value: str):
+        self.value = value
+        self.type = self.infer_type()
+
+    @staticmethod
+    def trim_quotes(value: str):
+        return value[1:-1]
+    
+    def infer_type(self) -> Type:
+        return Types.STR
+
+    def __repr__(self):
+        return f"\"{self.value}\""
+
+
 class Nil(Expr):
     def __init__(self):
         self.type = self.infer_type()

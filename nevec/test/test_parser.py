@@ -25,11 +25,15 @@ class TestParse:
         assert repr == input
 
     def test_three(self):
-        input = "1 | 2 ^ 3849348 / 23 * 9 + nil / true & false"
+        input = "1 bitor 2 ^ 3849348 / 23 * 9 + nil / true & false"
 
         repr = get_repr(input)
 
         assert repr == input
 
     def test_four(self):
-        input = ""
+        input = "1 bitor \"Hello, world!\" + -34.5 / 92 ^ \"()\""
+        
+        repr = get_repr(input)
+
+        assert repr == input

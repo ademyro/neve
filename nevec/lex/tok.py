@@ -49,7 +49,7 @@ class TokType(Enum):
     SHR = auto()
     BIT_AND = auto()
     BIT_XOR = auto()
-    PIPE = auto()
+    BIT_OR = auto()
 
     NEQ = auto()
     EQ = auto()
@@ -64,7 +64,6 @@ class TokType(Enum):
     QUESTION = auto()
 
     AND = auto()
-    BIT_OR = auto()
     CLASS = auto()
     DO = auto()
     ELSE = auto()
@@ -86,6 +85,7 @@ class TokType(Enum):
     RPAREN = auto()
     LBRACKET = auto()
     RBRACKET = auto()
+    PIPE = auto()
 
     ID = auto()
     STR = auto()
@@ -115,7 +115,7 @@ class TokType(Enum):
 class TokTypes:
     KEYWORDS = {
         "and": TokType.AND,
-        "bitor": TokType.BIT_OR
+        "bitor": TokType.BIT_OR,
         "class": TokType.CLASS,
         "do": TokType.DO,
         "else": TokType.ELSE,
@@ -155,7 +155,6 @@ class TokTypes:
         ">>": TokType.SHR,
         "&": TokType.BIT_AND,
         "^": TokType.BIT_XOR,
-        "|": TokType.PIPE,
 
         "!=": TokType.NEQ,
         "=": TokType.ASSIGN,
@@ -171,7 +170,8 @@ class TokTypes:
         "(": TokType.LPAREN,
         ")": TokType.RPAREN,
         "[": TokType.LBRACKET,
-        "]": TokType.RBRACKET
+        "]": TokType.RBRACKET,
+        "|": TokType.PIPE
     }
 
 @dataclass
