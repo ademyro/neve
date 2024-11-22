@@ -4,6 +4,8 @@ from nevec.lex.tok import Tok, TokType
 from enum import auto, Enum
 from dataclasses import dataclass
 
+from typing import Self
+
 @dataclass
 class Ast:
     type: Type
@@ -162,6 +164,10 @@ class Str(Expr):
         self.type = self.infer_type()
 
     @staticmethod
+    def empty():
+        return Str("")
+
+    @staticmethod
     def trim_quotes(value: str):
         return value[1:-1]
     
@@ -171,6 +177,29 @@ class Str(Expr):
     def __repr__(self):
         return f"\"{self.value}\""
 
+class Interpol(Expr):
+    def __init__(self, left: str, expr: Expr, next: Self | Str):
+        self.left = left
+        self.expr = expr
+        self.next = next
+
+        self.type = self.infer_type()
+
+    def infer_type(self) -> Type:
+        return Types.STR
+
+    def __repr__(self):
+        return "".join(
+            [
+                "\"", 
+                self.left, 
+                " #{", 
+                str(self.expr), 
+                "}", 
+                Str.trim_quotes(str(self.next)), 
+                "\""
+            ]
+        )
 
 class Nil(Expr):
     def __init__(self):

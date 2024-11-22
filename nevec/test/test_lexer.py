@@ -3,7 +3,7 @@ import test
 from typing import List
 
 from nevec.lex.lex import Lex
-from nevec.lex.tok import Tok, TokType, Loc
+from nevec.lex.tok import Tok, TokType
 
 def all_toks(lex: Lex) -> List[Tok]:
     tok = lex.next()

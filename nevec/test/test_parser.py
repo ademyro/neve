@@ -37,3 +37,10 @@ class TestParse:
         repr = get_repr(input)
 
         assert repr == input
+
+    def test_five(self):
+        input = "\"Hello, #{\"world!\"}  From #{\"Mars!\"}  This message took #{1.5 * 2} minutes to #{\"reach #{\"Earth\"}.\"}\""
+
+        repr = get_repr(input)
+
+        assert repr == input

@@ -137,6 +137,9 @@ class Parse:
 
             case TokType.STR:
                 return self.str_lit()
+            
+            case TokType.INTERPOL:
+                return self.interpol()
 
         print("primary: unexpected token", tok)
         return Expr(Types.UNKNOWN)
@@ -164,6 +167,29 @@ class Parse:
         raw_str = Str.trim_quotes(value)
 
         return Str(raw_str)
+
+    def interpol(self) -> Interpol:
+        tok = self.consume() 
+
+        value = tok.lexeme
+        raw_str = Str.trim_quotes(value)
+
+        interpol_expr = self.expr()
+
+        # TODO: make sure the interpol_expr implements Show.
+
+        next = None
+        if self.check(TokType.INTERPOL):
+            next = self.interpol() 
+        else:
+            if not self.check(TokType.STR):
+                print("interpol: unexpected token")
+
+                return Interpol(raw_str, interpol_expr, Str.empty())
+
+            next = self.str_lit()
+
+        return Interpol(raw_str, interpol_expr, next)
 
     def grouping(self) -> Parens:
         self.advance()
