@@ -51,18 +51,20 @@ class TokType(Enum):
     BIT_XOR = auto()
     PIPE = auto()
 
-    NEQUAL = auto()
-    ASSIGN = auto()
+    NEQ = auto()
     EQ = auto()
-    GREATER = auto()
-    GREATER_EQ = auto()
-    LESS = auto()
-    LESS_EQ = auto()
+    GT = auto()
+    GTE = auto()
+    LT = auto()
+    LTE = auto()
+
+    ASSIGN = auto()
 
     EXCLAM = auto()
     QUESTION = auto()
 
     AND = auto()
+    BIT_OR = auto()
     CLASS = auto()
     DO = auto()
     ELSE = auto()
@@ -113,6 +115,7 @@ class TokType(Enum):
 class TokTypes:
     KEYWORDS = {
         "and": TokType.AND,
+        "bitor": TokType.BIT_OR
         "class": TokType.CLASS,
         "do": TokType.DO,
         "else": TokType.ELSE,
@@ -154,13 +157,13 @@ class TokTypes:
         "^": TokType.BIT_XOR,
         "|": TokType.PIPE,
 
-        "!=": TokType.NEQUAL,
+        "!=": TokType.NEQ,
         "=": TokType.ASSIGN,
         "==": TokType.EQ,
-        ">": TokType.GREATER,
-        ">=": TokType.GREATER_EQ,
-        "<": TokType.LESS,
-        "<=": TokType.LESS_EQ,
+        ">": TokType.GT,
+        ">=": TokType.GTE,
+        "<": TokType.LT,
+        "<=": TokType.LTE,
 
         "!": TokType.EXCLAM,
         "?": TokType.QUESTION,
@@ -177,3 +180,7 @@ class Tok:
     lexeme: str
     loc: Loc
     value: Optional[any] = None
+
+    @staticmethod
+    def eof() -> "Tok":
+        return Tok(TokType.EOF, "", Loc.new())
