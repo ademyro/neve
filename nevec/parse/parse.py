@@ -1,18 +1,190 @@
-from typing import Callable
+from typing import List, Callable
 
+from nevec.err.err import Err, Note, NoteType, Line, Suggestion
 from nevec.lex.lex import Lex
-from nevec.lex.tok import Tok, TokType
+from nevec.lex.tok import Loc, Tok, TokType, TokTypes
 
 from nevec.parse.ast import *
+
+class ParseErr:
+    file_name: str
+    lines: List[str]
+
+    @staticmethod
+    def setup(file_name: str, lines: List[str]):
+        ParseErr.file_name = file_name
+        ParseErr.lines = lines
+
+    @staticmethod
+    def unexpected_char(tok: Tok) -> Err:
+        loc = tok.loc
+
+        msg = tok.value if tok.value is not None else "invalid character"
+
+        err = Err(
+            ParseErr.file_name,
+            ParseErr.lines,
+            tok.value,
+            loc
+        ).show(
+            Line(
+               loc 
+            ).add(
+                Note(
+                    NoteType.ERR,
+                    loc,
+                    f"here"
+                )
+            )
+        )
+
+        return err
+
+    @staticmethod
+    def unexpected_tok(tok: Tok, expected: TokType) -> Err:
+        loc = tok.loc
+        
+        expected_lexeme = {
+            lexeme 
+            for lexeme in TokTypes.TOKS
+            if TokTypes.TOKS[lexeme] == expected
+        }
+
+        expected_lexeme = list(expected_lexeme)[0]
+
+        err = Err(
+            ParseErr.file_name,
+            ParseErr.lines,
+            "unexpected token",
+            loc
+        ).show(
+            Line(
+               loc 
+            ).add(
+                Note(
+                    NoteType.ERR,
+                    loc,
+                    f"expected '{expected_lexeme}' but found '{tok.lexeme}'"
+                )
+            )
+        ).suggest(
+            Suggestion(
+                f"you can replace '{tok.lexeme}'",
+                f"replaced '{tok.lexeme}' with '{expected_lexeme}'",
+                loc,
+                expected_lexeme
+            )
+        )
+
+        return err
+
+    @staticmethod
+    def expected_tok(loc: Loc, expected: TokType) -> Err:
+        expected_lexeme = {
+            lexeme 
+            for lexeme in TokTypes.TOKS
+            if TokTypes.TOKS[lexeme] == expected
+        }
+
+        expected_lexeme = list(expected_lexeme)[0]
+
+        err = Err(
+            ParseErr.file_name,
+            ParseErr.lines,
+            f"'{expected_lexeme}' was expected, but found nothing",
+            loc
+        ).show(
+            Line(
+                loc
+            ).add(
+                Note(
+                    NoteType.ERR,
+                    loc,
+                    f"expected '{expected_lexeme}'"
+                )
+            )
+        ).suggest(
+            Suggestion(
+                f"however, you can insert it",
+                f"added '{expected_lexeme}'",
+                loc,
+                expected_lexeme
+            )
+        )
+
+        return err
+
+    @staticmethod
+    def expected_expr(tok: Tok) -> Err:
+        loc = tok.loc
+
+        err = Err(
+            ParseErr.file_name,
+            ParseErr.lines,
+            "expected an expression",
+            loc
+        ).show(
+            Line(
+                loc,
+                header_msg=f"'{tok.lexeme}' is not considered an expression"
+            ).add(
+                Note(
+                    NoteType.ERR,
+                    loc,
+                    f"expected an expression, but found '{tok.lexeme}'"
+                )
+            )
+        )
+
+        return err
+
+    @staticmethod
+    def expected(what: str, tok: Tok) -> Err:
+        loc = tok.loc
+
+        err = Err(
+            ParseErr.file_name,
+            ParseErr.lines,
+            f"expected {what}",
+            loc
+        ).show(
+            Line(
+                loc,
+                header_msg=f"'{tok.lexeme}' is not considered an expression"
+            ).add(
+                Note(
+                    NoteType.ERR,
+                    loc,
+                    f"not {what}"
+                )
+            )
+        )
+
+        return err
 
 class Parse:
     def __init__(self, code: str):
         self.lex: Lex = Lex(code)
         self.curr: Tok = Tok.eof()
         self.prev: Tok = Tok.eof()
+
         self.had_err: bool = False
+        self.panic_mode: bool = False
+
+        self.file_name = self.lex.file_name
+        self.lines = self.lex.lines
+
+        ParseErr.setup(self.file_name, self.lines)
 
         self.advance()
+
+    def show_err(self, err: Err):
+        if self.panic_mode:
+            return
+
+        self.panic_mode = True 
+        self.had_err = True
+        err.print()
 
     def advance(self):
         self.prev = self.curr
@@ -27,7 +199,7 @@ class Parse:
                 break
 
             # TODO: (re)implement proper error reporting
-            print("advance: unexpected token")
+            self.show_err(ParseErr.unexpected_char(self.curr))
 
     def check(self, *type: TokType) -> bool:
         return self.curr.type in type
@@ -36,8 +208,12 @@ class Parse:
         if self.curr.type == type:
             self.advance()
             return
-        
-        print("expect", type, ": unexpected token")
+
+        if self.curr.type in (TokType.EOF, TokType.NEWLINE):
+            self.show_err(ParseErr.expected_tok(self.curr.loc, type))
+            return
+
+        self.show_err(ParseErr.unexpected_tok(self.curr, type))
 
     def consume(self) -> Tok:
         tok = self.curr
@@ -141,7 +317,7 @@ class Parse:
             case TokType.INTERPOL:
                 return self.interpol()
 
-        print("primary: unexpected token", tok)
+        self.show_err(ParseErr.expected_expr(tok))
         return Expr(Types.UNKNOWN)
 
     def int_lit(self) -> Int:
@@ -183,7 +359,7 @@ class Parse:
             next = self.interpol() 
         else:
             if not self.check(TokType.STR):
-                print("interpol: unexpected token")
+                self.show_err(ParseErr.expected("a string", self.curr))
 
                 return Interpol(raw_str, interpol_expr, Str.empty())
 

@@ -12,8 +12,10 @@ class Ast:
     
 
 class Expr(Ast):
+    type: Type
+
     def infer_type(self) -> Type:
-        ...
+        return self.type
 
 
 class Parens(Expr):

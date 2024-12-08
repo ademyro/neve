@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from enum import Enum, auto
-from typing import Optional
+from typing import Optional, Self
 
 @dataclass
 class Loc:
@@ -26,12 +26,15 @@ class Loc:
         self.col += self.length
         self.length = 0
 
-    def __eq__(self, other: "Loc"):
+    def __eq__(self, other: Self):
         return (
             self.col == other.col and
             self.line == other.line and
             self.length == other.length
         )
+
+    def __repr__(self):
+        return f"{self.line}:{self.col}"
 
 
 class TokType(Enum):

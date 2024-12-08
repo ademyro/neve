@@ -163,6 +163,7 @@ class TestLex:
                 TokType.ASSIGN,
                 TokType.ERR,
                 TokType.EXCLAM,
+                TokType.ERR,
                 TokType.EOF
             ]
         )

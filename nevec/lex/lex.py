@@ -30,13 +30,15 @@ class Lex:
     DIGITS = "1234567890"
     WS = " \r\t"
 
-    def __init__(self, code: str):
+    def __init__(self, code: str, file_name="test.neve"):
         self.code: CharQueue = CharQueue(code)
+        self.file_name: str = file_name
         self.loc: Loc = Loc.new()
         self.char: Optional[str] = None
         self.lexeme: List[str] = []
 
         self.interpol_depth: int = 0
+        self.lines: List[str] = code.split("\n")
 
         self.advance()
 
@@ -130,26 +132,23 @@ class Lex:
         next_char = self.peek()
         current_char = self.char
 
-        seq = (
-            current_char + next_char
-            if next_char is not None
-            else current_char
-        )
+        if next_char is not None:
+            seq = current_char + next_char
 
-        tok_type = TokType.match(seq) 
-        
-        if tok_type is not None:
-            self.advance()
-            self.advance()
+            tok_type = TokType.match(seq) 
+            
+            if tok_type is not None:
+                self.advance()
+                self.advance()
 
-            return self.new_tok(tok_type)
+                return self.new_tok(tok_type)
 
         # otherwise, it's likely one char long
         new_tok_type = TokType.match(current_char)
 
         if new_tok_type is None:
             self.advance()
-            return self.err(f"unexpected character")
+            return self.err(f"invalid character")
 
         self.advance()
         return self.new_tok(new_tok_type)

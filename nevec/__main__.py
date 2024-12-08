@@ -16,7 +16,6 @@ if __name__ == "__main__":
         code = f.read()
         lex = Lex(code)
 
-
         tok = lex.next()
         toks = [tok]
 
