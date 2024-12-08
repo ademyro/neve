@@ -23,4 +23,5 @@
 )+
 [Header Separator (1 byte)]
 [Opcodes]
+[EOF Padding (16 bytes)]
 ```
