@@ -1,6 +1,6 @@
 import sys
 
-from nevec.lex.lex import Lex, TokType
+from nevec.parse.parse import Parse
 
 if __name__ == "__main__":
     args = sys.argv
@@ -14,14 +14,9 @@ if __name__ == "__main__":
 
     with open(filename) as f:
         code = f.read()
-        lex = Lex(code)
+        parse = Parse(code)
 
-        tok = lex.next()
-        toks = [tok]
+        ast = parse.parse()
 
-        while tok.type != TokType.EOF:
-            tok = lex.next()
-            toks.append(tok) 
-
-        print(toks)
+        print(ast)
 

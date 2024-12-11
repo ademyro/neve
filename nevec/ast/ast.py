@@ -1,26 +1,30 @@
-from nevec.parse.type import Type, Types
-from nevec.lex.tok import Tok, TokType
+from nevec.ast.type import Type, Types
+from nevec.lex.tok import Tok, TokType, Loc
 
 from enum import auto, Enum
 from dataclasses import dataclass
 
 from typing import Self
 
-@dataclass
 class Ast:
-    type: Type
-    
+    def __init__(self, type: Type, loc: Loc):
+        self.type = type
+        self.loc = loc
+
 
 class Expr(Ast):
-    type: Type
+    def __init__(self, type: Type, loc: Loc):
+        self.type = type
+        self.loc = loc
 
     def infer_type(self) -> Type:
         return self.type
 
 
 class Parens(Expr):
-    def __init__(self, expr: Expr):
+    def __init__(self, expr: Expr, loc: Loc):
         self.expr = expr
+        self.loc = loc
         self.type = self.infer_type()
 
     def infer_type(self) -> Type:
@@ -31,14 +35,15 @@ class Parens(Expr):
 
 
 class UnOp(Expr):
-    class UnOpType(Enum):
+    class Op(Enum):
         NEG = auto()
         NOT = auto()
 
 
-    def __init__(self, op: UnOpType, expr: Expr):
+    def __init__(self, op: Op, expr: Expr, loc: Loc):
         self.op = op
         self.expr = expr
+        self.loc = loc
         self.type = self.infer_type()
 
     def infer_type(self):
@@ -47,7 +52,7 @@ class UnOp(Expr):
     def __repr__(self):
         op = (
             "-"
-            if self.op == UnOp.UnOpType.NEG
+            if self.op == self.Op.NEG
             else "not "
         )
 
@@ -73,11 +78,19 @@ class BinOp(Expr):
         LT = auto()
         LTE = auto()
 
-    def __init__(self, left: Expr, op: BinOpType, right: Expr, tok: Tok):
+    def __init__(
+        self, 
+        left: Expr, 
+        op: BinOpType, 
+        right: Expr, 
+        tok: Tok, 
+        loc: Loc,
+    ):
         self.left = left
         self.op = op
         self.right = right
         self.tok = tok
+        self.loc = loc
 
         self.type = self.infer_type()
 
@@ -123,10 +136,50 @@ class BinOp(Expr):
     def __repr__(self):
         return f"{self.left} {self.tok.lexeme} {self.right}"
 
+class Bitwise(BinOp):
+    def infer_type(self) -> Type:
+        # TODO: replace all these checks with idea implementation checks
+        if (
+            self.left.type.truly_isnt(Types.INT) or
+            self.right.type.truly_isnt(Types.INT)
+        ):
+            return Types.UNKNOWN 
+
+        if self.left.type != self.right.type:
+            return Types.UNKNOWN
+
+        return Types.INT.unless_unknown(self.left.type, self.right.type)
+
+
+class Comparison(BinOp):
+    def infer_type(self) -> Type:
+        if self.left.type.truly_isnt(self.right.type):
+            return Types.UNKNOWN
+
+        return self.left.type.unless_unknown(self.left.type, self.right.type)
+
+
+class Term(BinOp):
+    def infer_type(self) -> Type:
+        if self.left.type.truly_isnt(self.right.type):
+            return Types.UNKNOWN
+
+        return self.left.type.unless_unknown(self.left.type, self.right.type)
+
+
+class Factor(BinOp):
+    def infer_type(self) -> Type:
+        if self.left.type.truly_isnt(self.right.type):
+            return Types.UNKNOWN
+
+        return self.left.type.unless_unknown(self.left.type, self.right.type)
+
 
 class Int(Expr):
-    def __init__(self, value: int):
+    def __init__(self, value: int, loc: Loc):
         self.value = value
+        self.loc = loc
+
         self.type = self.infer_type()
 
     def infer_type(self) -> Type:
@@ -137,8 +190,10 @@ class Int(Expr):
         
 
 class Float(Expr):
-    def __init__(self, value: float):
+    def __init__(self, value: float, loc: Loc):
         self.value = value
+        self.loc = loc
+
         self.type = self.infer_type()
 
     def infer_type(self) -> Type:
@@ -149,8 +204,10 @@ class Float(Expr):
         
 
 class Bool(Expr):
-    def __init__(self, value: bool):
+    def __init__(self, value: bool, loc: Loc):
         self.value = value
+        self.loc = loc
+
         self.type = self.infer_type()
 
     def infer_type(self) -> Type:
@@ -161,13 +218,15 @@ class Bool(Expr):
 
 
 class Str(Expr):
-    def __init__(self, value: str):
+    def __init__(self, value: str, loc: Loc):
         self.value = value
+        self.loc = loc
+
         self.type = self.infer_type()
 
     @staticmethod
     def empty():
-        return Str("")
+        return Str("", Loc.new())
 
     @staticmethod
     def trim_quotes(value: str):
@@ -183,10 +242,11 @@ class Str(Expr):
         return f"\"{self.value}\""
 
 class Interpol(Expr):
-    def __init__(self, left: str, expr: Expr, next: Self | Str):
+    def __init__(self, left: str, expr: Expr, next: Self | Str, loc: Loc):
         self.left = left
         self.expr = expr
         self.next = next
+        self.loc = loc
 
         self.type = self.infer_type()
 
@@ -207,7 +267,9 @@ class Interpol(Expr):
         )
 
 class Nil(Expr):
-    def __init__(self):
+    def __init__(self, loc: Loc):
+        self.loc = loc
+
         self.type = self.infer_type()
 
     def infer_type(self) -> Type:

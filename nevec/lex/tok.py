@@ -2,11 +2,13 @@ from dataclasses import dataclass
 from enum import Enum, auto
 from typing import Optional, Self
 
-@dataclass
 class Loc:
-    col: int
-    line: int
-    length: int
+    def __init__(self, col: int, line: int, length: int):
+        self.col: int = col
+        self.line: int = line
+        self.length: int = length
+
+        self.on_multiple_lines: bool = False
 
     @staticmethod
     def new():
@@ -25,6 +27,29 @@ class Loc:
     def sync(self):
         self.col += self.length
         self.length = 0
+
+    # not using `Self` here because silly mypy thinks Loc ≠ Self@Loc
+    def union_hull(self, other: "Loc") -> "Loc":
+        if self.line != other.line:
+            if self.on_multiple_lines:
+                return self
+            
+            if other.on_multiple_lines:
+                return other
+
+            earliest_loc = self if self.line < other.line else other
+
+            earliest_loc.length += len("...")
+            earliest_loc.on_multiple_lines = True
+
+            return earliest_loc
+
+        min_col = min(self.col, other.col)
+        max_col = max(self.col, other.col)
+
+        length = max_col - min_col
+
+        return Loc(self.line, min_col, length)
 
     def __eq__(self, other: Self):
         return (

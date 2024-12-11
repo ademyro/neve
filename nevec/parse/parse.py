@@ -1,30 +1,21 @@
-from typing import List, Callable
+from typing import Callable, Optional
 
 from nevec.err.err import Err, Note, NoteType, Line, Suggestion
+from nevec.err.report import Report
 from nevec.lex.lex import Lex
 from nevec.lex.tok import Loc, Tok, TokType, TokTypes
 
-from nevec.parse.ast import *
+from nevec.ast.ast import *
 
 class ParseErr:
-    file_name: str
-    lines: List[str]
-
-    @staticmethod
-    def setup(file_name: str, lines: List[str]):
-        ParseErr.file_name = file_name
-        ParseErr.lines = lines
-
     @staticmethod
     def unexpected_char(tok: Tok) -> Err:
         loc = tok.loc
 
         msg = tok.value if tok.value is not None else "invalid character"
 
-        err = Err(
-            ParseErr.file_name,
-            ParseErr.lines,
-            tok.value,
+        err = Report.err(
+            msg,
             loc
         ).show(
             Line(
@@ -52,9 +43,7 @@ class ParseErr:
 
         expected_lexeme = list(expected_lexeme)[0]
 
-        err = Err(
-            ParseErr.file_name,
-            ParseErr.lines,
+        err = Report.err(
             "unexpected token",
             loc
         ).show(
@@ -88,9 +77,7 @@ class ParseErr:
 
         expected_lexeme = list(expected_lexeme)[0]
 
-        err = Err(
-            ParseErr.file_name,
-            ParseErr.lines,
+        err = Report.err(
             f"'{expected_lexeme}' was expected, but found nothing",
             loc
         ).show(
@@ -118,9 +105,7 @@ class ParseErr:
     def expected_expr(tok: Tok) -> Err:
         loc = tok.loc
 
-        err = Err(
-            ParseErr.file_name,
-            ParseErr.lines,
+        err = Report.err(
             "expected an expression",
             loc
         ).show(
@@ -139,18 +124,16 @@ class ParseErr:
         return err
 
     @staticmethod
-    def expected(what: str, tok: Tok) -> Err:
-        loc = tok.loc
+    def expected(what: str, got: Tok) -> Err:
+        loc = got.loc
 
-        err = Err(
-            ParseErr.file_name,
-            ParseErr.lines,
+        err = Report.err(
             f"expected {what}",
             loc
         ).show(
             Line(
                 loc,
-                header_msg=f"'{tok.lexeme}' is not considered an expression"
+                header_msg=f"'{got.lexeme}' is not considered an expression"
             ).add(
                 Note(
                     NoteType.ERR,
@@ -173,8 +156,6 @@ class Parse:
 
         self.file_name = self.lex.file_name
         self.lines = self.lex.lines
-
-        ParseErr.setup(self.file_name, self.lines)
 
         self.advance()
 
@@ -205,11 +186,11 @@ class Parse:
         return self.curr.type in type
     
     def expect(self, type: TokType):
-        if self.curr.type == type:
+        if self.check(type):
             self.advance()
             return
 
-        if self.curr.type in (TokType.EOF, TokType.NEWLINE):
+        if self.check(TokType.EOF, TokType.NEWLINE):
             self.show_err(ParseErr.expected_tok(self.curr.loc, type))
             return
 
@@ -220,33 +201,46 @@ class Parse:
         self.advance()
 
         return tok
-    
+
+    def consume_expect(self, type: TokType) -> Optional[Tok]:
+        if not self.check(type):
+            self.expect(type)
+            return None
+
+        return self.consume()
+
     def parse(self) -> Ast:
         ast = self.expr()
 
         if self.had_err:
             del ast
-            return Ast(Types.UNKNOWN)
+            return Ast(Types.UNKNOWN, Loc.new())
         
         return ast
 
     def expr(self) -> Expr:
         return self.bit_or()
 
-    def bit_or(self) -> Expr:
-        return self.bin_op(self.bit_xor, TokType.BIT_OR)
+    def bit_or(self) -> Bitwise:
+        return self.bin_op(Bitwise, self.bit_xor, TokType.BIT_OR)
     
-    def bit_xor(self) -> Expr:
-        return self.bin_op(self.bit_and, TokType.BIT_XOR)
+    def bit_xor(self) -> Bitwise:
+        return self.bin_op(Bitwise, self.bit_and, TokType.BIT_XOR)
     
-    def bit_and(self) -> Expr:
-        return self.bin_op(self.equality, TokType.BIT_AND)
+    def bit_and(self) -> Bitwise:
+        return self.bin_op(Bitwise, self.equality, TokType.BIT_AND)
 
-    def equality(self) -> Expr:
-        return self.bin_op(self.comparison, TokType.EQ, TokType.NEQ) 
-
-    def comparison(self) -> Expr:
+    def equality(self) -> Comparison:
         return self.bin_op(
+            Comparison, 
+            self.comparison, 
+            TokType.EQ, 
+            TokType.NEQ
+        ) 
+
+    def comparison(self) -> Comparison:
+        return self.bin_op(
+            Comparison,
             self.bit_shift, 
             TokType.GT, 
             TokType.GTE, 
@@ -254,16 +248,16 @@ class Parse:
             TokType.LTE
         )
 
-    def bit_shift(self) -> Expr:
-        return self.bin_op(self.term, TokType.SHL, TokType.SHR)
+    def bit_shift(self) -> Bitwise:
+        return self.bin_op(Bitwise, self.term, TokType.SHL, TokType.SHR)
 
-    def term(self) -> Expr:
-        return self.bin_op(self.factor, TokType.PLUS, TokType.MINUS)
+    def term(self) -> Term:
+        return self.bin_op(Term, self.factor, TokType.PLUS, TokType.MINUS)
 
-    def factor(self) -> Expr:
-        return self.bin_op(self.unary, TokType.STAR, TokType.SLASH)
+    def factor(self) -> Factor:
+        return self.bin_op(Factor, self.unary, TokType.STAR, TokType.SLASH)
     
-    def bin_op(self, fun: Callable, *ops: TokType) -> Expr:
+    def bin_op(self, type: type, fun: Callable, *ops: TokType) -> BinOp:
         left = fun()
 
         while self.check(*ops):
@@ -271,7 +265,14 @@ class Parse:
 
             right = fun()
 
-            left = BinOp(left, BinOp.from_tok(op), right, op)
+            loc = left.loc.union_hull(right.loc)
+            left = type(
+                left,
+                BinOp.from_tok(op),
+                right,
+                op,
+                loc
+            )
 
         return left
 
@@ -283,12 +284,13 @@ class Parse:
         operand = self.unary()
 
         unop_type = (
-            UnOp.UnOpType.NEG
+            UnOp.Op.NEG
             if op.type == TokType.MINUS
-            else UnOp.UnOpType.NOT
+            else UnOp.Op.NOT
         )
 
-        return UnOp(unop_type, operand)
+        loc = op.loc.union_hull(operand.loc)
+        return UnOp(unop_type, operand, loc)
 
     def primary(self) -> Expr:
         tok = self.curr
@@ -302,11 +304,11 @@ class Parse:
 
             case TokType.TRUE | TokType.FALSE:
                 self.advance()
-                return Bool(tok.type == TokType.TRUE)
+                return Bool(tok.type == TokType.TRUE, tok.loc)
             
             case TokType.NIL:
                 self.advance()
-                return Nil()
+                return Nil(tok.loc)
 
             case TokType.LPAREN:
                 return self.grouping()
@@ -318,7 +320,7 @@ class Parse:
                 return self.interpol()
 
         self.show_err(ParseErr.expected_expr(tok))
-        return Expr(Types.UNKNOWN)
+        return Expr(Types.UNKNOWN, tok.loc)
 
     def int_lit(self) -> Int:
         # TODO: allow hexadecimal, binary, and octal integers
@@ -327,14 +329,14 @@ class Parse:
 
         value = int(tok.lexeme)
 
-        return Int(value)
+        return Int(value, tok.loc)
 
     def float_lit(self) -> Float:
         tok = self.consume()
 
         value = float(tok.lexeme)
 
-        return Float(value)
+        return Float(value, tok.loc)
     
     def str_lit(self) -> Str:
         tok = self.consume()
@@ -342,7 +344,7 @@ class Parse:
         value = tok.lexeme
         raw_str = Str.trim_quotes(value)
 
-        return Str(raw_str)
+        return Str(raw_str, tok.loc)
 
     def interpol(self) -> Interpol:
         tok = self.consume() 
@@ -359,19 +361,24 @@ class Parse:
             next = self.interpol() 
         else:
             if not self.check(TokType.STR):
-                self.show_err(ParseErr.expected("a string", self.curr))
+                self.show_err(ParseErr.expected("a string", got=self.curr))
 
-                return Interpol(raw_str, interpol_expr, Str.empty())
+                loc = tok.loc.union_hull(self.curr.loc)
+                return Interpol(raw_str, interpol_expr, Str.empty(), loc)
 
             next = self.str_lit()
 
-        return Interpol(raw_str, interpol_expr, next)
+        loc = tok.loc.union_hull(next.loc)
+        return Interpol(raw_str, interpol_expr, next, loc)
 
     def grouping(self) -> Parens:
-        self.advance()
+        left_paren = self.consume().loc
 
         grouped = self.expr()
         
-        self.expect(TokType.RPAREN)
+        right_paren = self.consume_expect(TokType.RPAREN)
 
-        return Parens(grouped)
+        loc_end = right_paren.loc if right_paren is not None else grouped.loc
+
+        loc = left_paren.union_hull(loc_end)
+        return Parens(grouped, loc)

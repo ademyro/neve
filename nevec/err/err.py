@@ -67,6 +67,7 @@ class Line:
         show_previous_line=False, 
         header_msg: Optional[str]=None
     ):
+        self.loc: Loc = loc
         self.notes: List[Note] = []
         self.show_previous_line: bool = show_previous_line
         self.header_msg: Optional[str] = header_msg
@@ -100,9 +101,9 @@ class Line:
             previous_line = self.previous_line(lines, max_line)
 
             offending_line = lines[line - 1]
-            offending_line = "".join(self.color(offending_line))
+            offending_line = "".join(self.color(self.loc, offending_line))
         else:
-            offending_line = "".join(self.color(given_line))
+            offending_line = "".join(self.color(self.loc, given_line))
             line_str = str(given_line_number)
 
         displayed_line = offset(
@@ -222,8 +223,11 @@ class Line:
 
         return [line] + self.emit_hangs(notes_left[:-1], max_line)
 
-    def color(self, line: str, index=0, reset=False) -> List[str]:
+    def color(self, loc: Loc, line: str, index=0, reset=False) -> List[str]:
         if index == len(line):
+            if list(filter(lambda c: c > len(line), self.cols)) != []:
+                return [Color.GRAY, "...", Color.RESET]
+
             return [Color.RESET]
 
         col = index + 1

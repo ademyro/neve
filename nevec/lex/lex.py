@@ -2,6 +2,7 @@ import string
 
 from typing import List, Optional
 
+from nevec.err.report import Report
 from nevec.lex.tok import Loc, TokType, Tok
 
 class CharQueue:
@@ -39,6 +40,8 @@ class Lex:
 
         self.interpol_depth: int = 0
         self.lines: List[str] = code.split("\n")
+
+        Report.setup(file_name, self.lines)
 
         self.advance()
 
