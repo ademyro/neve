@@ -1,11 +1,12 @@
 from nevec.ast.ast import *
 from nevec.ast.visit import Visit
 
-from nevec.err.err import Err, Line, Note, NoteType, Suggestion
-from nevec.err.report import Report
+from nevec.check.errs import *
+
+from nevec.err.err import Err
 
 class Check(Visit[bool]):
-    def __init__(self, file_name: str):
+    def __init__(self):
         self.had_err: bool = False
 
     def fail(self, err: Err) -> bool:
@@ -25,40 +26,24 @@ class Check(Visit[bool]):
                 return False
 
             un_op.type.poison()
-            return self.fail(Report.err(
-                # TODO: change this to 
-                # "{type} doesn’t implement the `Neg` idea"
-                # once we implement ideas.
-                "can only negate Int or Float values",
-                un_op.loc
-            ).show(
-                Line(expr.loc).add(
-                    Note(
-                        NoteType.ERR,
-                        expr.loc,
-                        str(expr.type)
-                    )
-                )
-            ))
 
+            return self.fail(TypeErr(
+                "can only negate Int or Float values",
+                un_op.loc,
+                expr
+            ))
+            
         if un_op.op == UnOp.Op.NOT:
             if expr.type == Types.BOOL:
                 return False
 
-            return self.fail(Report.err(
-                # TODO: change this to 
-                # "{type} doesn’t implement the `Not` idea"
-                # once we implement ideas.
+            return self.fail(TypeErr(
                 "can only flip booleans",
-                un_op.loc
-            ).show(
-                Line(expr.loc).add(
-                    Note(
-                        NoteType.ERR,
-                        expr.loc,
-                        str(expr.type)
-                    )            
-                 )
+                un_op.loc,
+                expr
             ))
-    
+
+        raise TypeError(
+            f"unary op {un_op.op.name()} not implemented in check.py"
+        )
     

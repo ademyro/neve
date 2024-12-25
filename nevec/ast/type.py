@@ -32,12 +32,6 @@ class Type:
     def is_poisoned(self) -> bool:
         return self == Types.UNKNOWN
 
-    def truly_isnt(self, other: Self) -> bool:
-        return (
-            self == other and
-            self != Types.UNKNOWN
-        )
-
     def unless_unknown(self, *others: "Type") -> "Type":
         if (
             list(filter(Type.is_poisoned, others)) != []
@@ -45,7 +39,13 @@ class Type:
             return Types.UNKNOWN_SND
         
         return self
-    
+
+    def __ne__(self, other: Self) -> bool:
+        return (
+            self == other and
+            self != Types.UNKNOWN
+        )
+
     def __eq__(self, other: Self) -> bool:
         return self.name == other.name
     

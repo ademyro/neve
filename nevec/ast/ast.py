@@ -2,9 +2,8 @@ from nevec.ast.type import Type, Types
 from nevec.lex.tok import Tok, TokType, Loc
 
 from enum import auto, Enum
-from dataclasses import dataclass
 
-from typing import Self
+from typing import Self, Optional
 
 class Ast:
     def __init__(self, type: Type, loc: Loc):
@@ -98,78 +97,52 @@ class BinOp(Expr):
     def from_tok(tok: Tok):
         return BinOp.BinOpType(tok.type.value - TokType.MINUS.value)
 
-    def infer_type(self) -> Type:
-        if (
-            self.op == self.BinOpType.PLUS and
-            self.left.type == Types.STR and
-            self.right.type == Types.STR
-        ):
-            return Types.STR
-        
-        if self.op == self.BinOpType.SLASH:
-            return Types.FLOAT
-        
-        if (
-            self.op.value >= self.BinOpType.SHL.value and
-            self.op.value <= self.BinOpType.BIT_XOR.value
-        ):
-            return Types.INT
-        
-        if (
-            self.op.value >= self.BinOpType.NEQ.value and
-            self.op.value <= self.BinOpType.LTE.value
-        ):
-            return Types.BOOL
+    def infer_type(self, base_type: Optional[Type]=None) -> Type:
+        if self.left.type != self.right.type:
+            return Types.UNKNOWN
 
-        # otherwise, we're dealing with (-) or (*)
-        if self.left.type == self.right.type:
-            return self.left.type
-        
-        if (
-            self.left.type == Types.FLOAT or
-            self.right.type == Types.FLOAT
-        ):
-            return Types.FLOAT
+        base_type = base_type if base_type else self.left.type 
 
-        return Types.UNKNOWN
+        if self.left.type != base_type:
+            return Types.UNKNOWN
+
+        return base_type.unless_unknown(self.left.type, self.right.type)
 
     def __repr__(self):
         return f"{self.left} {self.tok.lexeme} {self.right}"
 
+
 class Bitwise(BinOp):
-    def infer_type(self) -> Type:
-        # TODO: replace all these checks with idea implementation checks
-        if (
-            self.left.type.truly_isnt(Types.INT) or
-            self.right.type.truly_isnt(Types.INT)
-        ):
-            return Types.UNKNOWN 
+    def infer_type(self, base_type=Types.INT) -> Type:
+        return super().infer_type(base_type)
+
+
+class Comparison(BinOp):
+    def infer_type(self, base_type=Types.BOOL) -> Type:
+        return super().infer_type(base_type)
+
+
+class Term(BinOp):
+    def infer_type(self, base_type=None):
+        _ = base_type
 
         if self.left.type != self.right.type:
             return Types.UNKNOWN
 
-        return Types.INT.unless_unknown(self.left.type, self.right.type)
-
-
-class Comparison(BinOp):
-    def infer_type(self) -> Type:
-        if self.left.type.truly_isnt(self.right.type):
-            return Types.UNKNOWN
-
-        return self.left.type.unless_unknown(self.left.type, self.right.type)
-
-
-class Term(BinOp):
-    def infer_type(self) -> Type:
-        if self.left.type.truly_isnt(self.right.type):
+        if not self.left.type.is_num():
             return Types.UNKNOWN
 
         return self.left.type.unless_unknown(self.left.type, self.right.type)
 
 
 class Factor(BinOp):
-    def infer_type(self) -> Type:
-        if self.left.type.truly_isnt(self.right.type):
+    def infer_type(self, base_type=None) -> Type:
+        _ = base_type
+
+        if self.left.type != self.right.type:
+            return Types.UNKNOWN
+
+        if not self.left.type.is_num():
             return Types.UNKNOWN
 
         return self.left.type.unless_unknown(self.left.type, self.right.type)
