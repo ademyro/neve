@@ -57,6 +57,7 @@ class UnOp(Expr):
 
         return f"{op}{self.expr}"
 
+
 class BinOp(Expr):
     class BinOpType(Enum):
         MINUS = auto()  
@@ -103,9 +104,6 @@ class BinOp(Expr):
 
         base_type = base_type if base_type else self.left.type 
 
-        if self.left.type != base_type:
-            return Types.UNKNOWN
-
         return base_type.unless_unknown(self.left.type, self.right.type)
 
     def __repr__(self):
@@ -114,6 +112,12 @@ class BinOp(Expr):
 
 class Bitwise(BinOp):
     def infer_type(self, base_type=Types.INT) -> Type:
+        if (
+            self.left.type != Types.INT or
+            self.right.type != Types.INT
+        ):
+            return Types.UNKNOWN
+
         return super().infer_type(base_type)
 
 
@@ -122,21 +126,8 @@ class Comparison(BinOp):
         return super().infer_type(base_type)
 
 
-class Term(BinOp):
+class Arith(BinOp):
     def infer_type(self, base_type=None):
-        _ = base_type
-
-        if self.left.type != self.right.type:
-            return Types.UNKNOWN
-
-        if not self.left.type.is_num():
-            return Types.UNKNOWN
-
-        return self.left.type.unless_unknown(self.left.type, self.right.type)
-
-
-class Factor(BinOp):
-    def infer_type(self, base_type=None) -> Type:
         _ = base_type
 
         if self.left.type != self.right.type:

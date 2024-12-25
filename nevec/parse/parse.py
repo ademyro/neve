@@ -251,11 +251,11 @@ class Parse:
     def bit_shift(self) -> Bitwise:
         return self.bin_op(Bitwise, self.term, TokType.SHL, TokType.SHR)
 
-    def term(self) -> Term:
-        return self.bin_op(Term, self.factor, TokType.PLUS, TokType.MINUS)
+    def term(self) -> Arith:
+        return self.bin_op(Arith, self.factor, TokType.PLUS, TokType.MINUS)
 
-    def factor(self) -> Factor:
-        return self.bin_op(Factor, self.unary, TokType.STAR, TokType.SLASH)
+    def factor(self) -> Arith:
+        return self.bin_op(Arith, self.unary, TokType.STAR, TokType.SLASH)
     
     def bin_op(self, type: type, fun: Callable, *ops: TokType) -> BinOp:
         left = fun()

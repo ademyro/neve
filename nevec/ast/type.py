@@ -26,11 +26,11 @@ class Type:
     def poison(self):
         self = Types.UNKNOWN
 
-    def ignorable(self) -> bool:
+    def is_ignorable(self) -> bool:
         return self.kind == TypeKind.UNKNOWN_SND
 
     def is_poisoned(self) -> bool:
-        return self == Types.UNKNOWN
+        return self.kind == TypeKind.UNKNOWN
 
     def unless_unknown(self, *others: "Type") -> "Type":
         if (

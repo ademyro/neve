@@ -8,6 +8,8 @@ class Visit[T]:
         method = getattr(self, method_name)
 
         if method is None:
-            print(f"Visit error: no {method_name} visit method", file=stderr)
+            raise TypeError(
+                f"Visit error: no visit method for {type(ast).__name__}"
+            )
 
         return method(self, ast) 
