@@ -19,6 +19,9 @@ class Check(Visit[bool]):
         return self.visit(parens.expr)
 
     def visit_UnOp(self, un_op: UnOp) -> bool:
+        if self.visit(un_op.expr):
+            return True
+
         expr = un_op.expr
 
         if un_op.op == UnOp.Op.NEG:
@@ -48,29 +51,53 @@ class Check(Visit[bool]):
         )
         
     def visit_Bitwise(self, bitwise: Bitwise) -> bool:
+        had_err = False
+
+        if self.visit(bitwise.left):
+            return True
+
+        if self.visit(bitwise.right):
+            return True 
+
         if bitwise.type.is_ignorable():
             return True
 
         if bitwise.type == Types.UNKNOWN:
             if bitwise.left.type != bitwise.right.type:
-                return self.fail(TypeErr(
+                had_err = self.fail(TypeErr(
                     "operand types don't match",
                     bitwise.loc,
                     bitwise.left,
                     bitwise.right
                 ))
             
-            # otherwise bitwise.left.type != bitwise.right.type
-            return self.fail(TypeErr(
-                "left and right operands must be integers",
-                bitwise.loc,
-                bitwise.left,
-                bitwise.right
-            ))
+            if (
+                bitwise.left.type != Types.INT or
+                bitwise.right.type != Types.INT
+            ):
+                had_err = self.fail(TypeErr(
+                    "operands of bitwise operation must be Int",
+                    bitwise.loc,
+                    bitwise.left,
+                    bitwise.right
+                ).add(
+                    Note(
+                        NoteType.HARMLESS,
+                        bitwise.tok.loc,
+                        "only accepts Int"
+                    ),
+                    on_line=bitwise.loc.line
+                ))
 
-        return False
+        return had_err
 
     def visit_Comparison(self, comparison: Comparison):
+        if self.visit(comparison.left):
+            return True
+
+        if self.visit(comparison.right):
+            return True
+
         if comparison.type.is_ignorable():
             return True
 
@@ -85,27 +112,46 @@ class Check(Visit[bool]):
         return False
 
     def visit_Arith(self, arith: Arith):
+        had_err = False
+
+        if self.visit(arith.left):
+            return True
+
+        if self.visit(arith.right):
+            return True
+
         if arith.type.is_ignorable():
             return True
 
         if arith.type == Types.UNKNOWN:
             if arith.left.type != arith.right.type:
-                return self.fail(TypeErr(
+                had_err = self.fail(TypeErr(
                     "operand types don't match",
                     arith.loc,
                     arith.left,
                     arith.right
                 ))
 
-            # otherwise, either arith.right or arith.left aren't nums
-            return self.fail(TypeErr(
-                "operands must be either Int or Float",
-                arith.loc,
-                arith.left,
-                arith.right
-            ))
+            if (
+                not arith.left.type.is_num() or
+                not arith.right.type.is_num()
+            ):
+                had_err = self.fail(TypeErr(
+                    "operands of arithmetic operation must be "
+                    "either Int or Float",
+                    arith.loc,
+                    arith.left,
+                    arith.right
+                ).add(
+                    Note(
+                        NoteType.HARMLESS,
+                        arith.tok.loc,
+                        "only accepts Int or Float—assuming the types match"
+                    ),
+                    on_line=arith.loc.line
+                ))
 
-        return False
+        return had_err
 
     def visit_Int(self, i: Int):
         _ = i

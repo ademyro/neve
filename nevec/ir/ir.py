@@ -88,6 +88,11 @@ class IBinOp(Ir):
         self.loc: Loc = loc
         self.type = type
 
+    def __repr__(self) -> str:
+        if self.op_lexeme == "":
+            return f"{self.left} {self.right}"
+
+        return f"{self.left} {self.op_lexeme} {self.right}"
 
 class IInt(Ir):
     def __init__(self, value: int, loc: Loc, type: Type):
@@ -137,13 +142,13 @@ class IInterpol(Ir):
         self, 
         left: str, 
         expr: Ir, 
-        next: Self | IStr, 
+        next: Ir, # Self | IStr 
         loc: Loc,
         type: Type
     ):
         self.left: str = left
         self.expr: Ir = expr
-        self.next: Self | IStr = next
+        self.next: Ir = next
 
         self.loc: Loc = loc
         self.type: Type = type
@@ -156,13 +161,12 @@ class IInterpol(Ir):
                 "#{", 
                 str(self.expr), 
                 "}", 
-                Str.trim_quotes(str(self.next)), 
-                "\""
+                Str.trim_quotes(str(self.next)) 
             ]
         )
 
 
-class INIl(Ir):
+class INil(Ir):
     def __init__(self, loc: Loc):
         self.loc: Loc = loc
         self.type: Type = Types.NIL

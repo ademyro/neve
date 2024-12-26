@@ -39,17 +39,18 @@ class Loc:
 
             earliest_loc = self if self.line < other.line else other
 
-            earliest_loc.length += len("...")
             earliest_loc.on_multiple_lines = True
 
             return earliest_loc
 
+        max_loc = self if self.col > other.col else other
+
         min_col = min(self.col, other.col)
         max_col = max(self.col, other.col)
 
-        length = max_col - min_col
+        length = max_col - min_col + max_loc.length
 
-        return Loc(self.line, min_col, length)
+        return Loc(min_col, self.line, length)
 
     def __eq__(self, other: Self):
         return (

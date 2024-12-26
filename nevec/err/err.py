@@ -29,22 +29,22 @@ class Note:
 
         self.hang: int = loc.col + self.center - 1
 
-    def underline(self, col=1) -> Tuple[int, str]:
+    def underline(self, col=1, initial_col=0) -> Tuple[int, str]:
         loc = self.loc
 
         if col == self.hang:
-            next = self.underline(col + 1)
+            next = self.underline(col + 1, initial_col)
             return (next[0] + 1, self.color() + "┬" + next[1])
 
         if col >= loc.col - 1 and col <= self.length:
-            next = self.underline(col + 1)
+            next = self.underline(col + 1, initial_col)
             return (next[0] + 1, self.color() + "─" + next[1])
 
         if col < loc.col:
-            next = self.underline(col + 1)
+            next = self.underline(col + 1, initial_col)
             return (next[0] + 1, self.color() + " " + next[1])
 
-        return (0, Color.RESET)
+        return (initial_col, Color.RESET)
 
     def color(self) -> str:
         match self.type:
@@ -81,6 +81,8 @@ class Line:
         given_line: Optional[str]=None,
         given_line_number=1
     ) -> List[str]:
+        self.notes = sorted(self.notes, key=lambda n: n.loc.col)
+
         self.get_cols()
 
         max_line = len(lines)
@@ -182,7 +184,7 @@ class Line:
         if index >= len(self.notes):
             return ""
 
-        pair = self.notes[index].underline(col) 
+        pair = self.notes[index].underline(col, col) 
 
         return pair[1] + self.emit_underlines(pair[0], index + 1)
 

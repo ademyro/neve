@@ -1,7 +1,8 @@
 import sys
 
-from nevec.parse.parse import Parse
 from nevec.check.check import Check
+from nevec.parse.parse import Parse
+from nevec.ir.toir import ToIr
 
 if __name__ == "__main__":
     args = sys.argv
@@ -21,5 +22,11 @@ if __name__ == "__main__":
 
         had_err = Check().visit(ast)
 
+        if had_err:
+            exit(1)
+
+        ir = ToIr().visit(ast)
+
         print(ast)
+        print(ir)
 

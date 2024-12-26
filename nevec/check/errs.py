@@ -18,9 +18,29 @@ class TypeErr(Err):
             raise ValueError(
                 "at least one Expr node should be given to a TypeErr"
             )
-    
+
+        self.err = self.make_err()
+        self.emit()
+
     @override
     def emit(self) -> str:
+        return self.err.emit()
+
+    def add(self, note: Note, on_line: int):
+        lines = self.err.lines 
+        found = list(filter(lambda l: l.line == on_line, lines))
+
+        if found == []:
+            raise ValueError(
+                f"instance of TypeErr does not display line #{on_line}"
+            )
+
+        line = found[0]
+        line.add(note)
+
+        return self
+
+    def make_err(self) -> Err:
         first_expr = self.exprs[0]
 
         first_line = Line(first_expr.loc)
@@ -34,9 +54,9 @@ class TypeErr(Err):
         # wrapping it all around list() because silly Python doesn't 
         # immediately interpret map() objects
         list(map(err.show, lines))
-        
-        return err.emit()
 
+        return err
+    
     def make_lines(
         self,
         exprs: List[Expr],
