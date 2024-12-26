@@ -59,9 +59,9 @@ class UnOp(Expr):
 
 
 class BinOp(Expr):
-    class BinOpType(Enum):
-        MINUS = auto()  
+    class Op(Enum):
         PLUS = auto()
+        MINUS = auto()  
         STAR = auto()
         SLASH = auto()
         
@@ -81,7 +81,7 @@ class BinOp(Expr):
     def __init__(
         self, 
         left: Expr, 
-        op: BinOpType, 
+        op: Op, 
         right: Expr, 
         tok: Tok, 
         loc: Loc,
@@ -96,7 +96,7 @@ class BinOp(Expr):
 
     @staticmethod
     def from_tok(tok: Tok):
-        return BinOp.BinOpType(tok.type.value - TokType.MINUS.value)
+        return BinOp.Op(tok.type.value - TokType.MINUS.value)
 
     def infer_type(self, base_type: Optional[Type]=None) -> Type:
         if self.left.type != self.right.type:
