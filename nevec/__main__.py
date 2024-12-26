@@ -1,6 +1,7 @@
 import sys
 
 from nevec.parse.parse import Parse
+from nevec.check.check import Check
 
 if __name__ == "__main__":
     args = sys.argv
@@ -17,6 +18,8 @@ if __name__ == "__main__":
         parse = Parse(code)
 
         ast = parse.parse()
+
+        had_err = Check().visit(ast)
 
         print(ast)
 

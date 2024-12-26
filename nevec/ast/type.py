@@ -42,8 +42,8 @@ class Type:
 
     def __ne__(self, other: Self) -> bool:
         return (
-            self == other and
-            self != Types.UNKNOWN
+            self.name != other.name and
+            (not self.is_poisoned() or not self.is_ignorable())
         )
 
     def __eq__(self, other: Self) -> bool:

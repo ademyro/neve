@@ -12,4 +12,4 @@ class Visit[T]:
                 f"Visit error: no visit method for {type(ast).__name__}"
             )
 
-        return method(self, ast) 
+        return method(ast) 

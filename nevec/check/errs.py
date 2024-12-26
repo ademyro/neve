@@ -44,7 +44,7 @@ class TypeErr(Err):
         previous_line: Optional[int]=None
     ) -> List[Line]:
         if exprs == []:
-            return []
+            return lines
 
         head = exprs[0]
         current_line = head.loc.line
@@ -52,7 +52,10 @@ class TypeErr(Err):
         previous_line = previous_line if previous_line else current_line
 
         if current_line != previous_line:
-            line = Line(self.locus, show_previous_line=True).add(
+            line = Line(
+                head.loc, 
+                show_previous_line=current_line - 1 > previous_line
+            ).add(
                 Note(
                     NoteType.ERR,
                     head.loc,
@@ -64,7 +67,7 @@ class TypeErr(Err):
                 exprs[1:],
                 lines + [line],
                 previous_line=current_line
-            ) + [line]
+            )
 
         last_line = lines[-1]
         last_line.add(
