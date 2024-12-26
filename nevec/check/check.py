@@ -108,20 +108,32 @@ class Check(Visit[bool]):
         return False
 
     def visit_Int(self, i: Int):
+        _ = i
+        
         return False
 
     def visit_Float(self, f: Float):
+        _ = f
+
         return False
 
     def visit_Bool(self, b: Bool):
+        _ = b
+
         return False
 
     def visit_Str(self, s: Str):
+        _ = s
+
         return False
 
     def visit_Interpol(self, interpol: Interpol):
+        _ = interpol
+
         # TODO: check if each expression implements Show
         return False
 
     def visit_Nil(self, nil: Nil):
+        _ = nil
+
         return False
