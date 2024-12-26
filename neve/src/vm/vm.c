@@ -157,10 +157,6 @@ static Aftermath run(NeveVM *vm) {
         vm->stackTop[-1] = BOOL_VAL(VAL_AS_NUM(vm->stackTop[-1]) == 0);
         break;
 
-      case OP_IS_MINUS_ONE:
-        vm->stackTop[-1] = BOOL_VAL(VAL_AS_NUM(vm->stackTop[-1]) == -1);
-        break;
-
       case OP_ADD:
         BIN_OP(NUM_VAL, +);
         break;
