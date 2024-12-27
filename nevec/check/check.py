@@ -5,7 +5,7 @@ from nevec.check.errs import *
 
 from nevec.err.err import Err
 
-class Check(Visit[bool]):
+class Check(Visit[Ast, bool]):
     def __init__(self):
         self.had_err: bool = False
 
@@ -183,3 +183,8 @@ class Check(Visit[bool]):
         _ = nil
 
         return False
+
+    def visit_Ast(self, ast: Ast):
+        _ = ast
+
+        return True

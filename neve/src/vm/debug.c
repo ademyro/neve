@@ -98,9 +98,6 @@ size_t disasmInstr(Chunk *ch, size_t offset) {
 
     case OP_IS_ZERO:
       return simpleInstr("isz", offset);
-    
-    case OP_IS_MINUS_ONE:
-      return simpleInstr("ism1", offset);
 
     case OP_ADD:
       return simpleInstr("add", offset);
@@ -117,10 +114,8 @@ size_t disasmInstr(Chunk *ch, size_t offset) {
     case OP_CONCAT:
       return simpleInstr("concat", offset);
 
-    /*
     case OP_INTERPOL:
       return byteInstr("interpol", ch, offset);
-    */
 
     case OP_SHL:
       return simpleInstr("shl", offset);

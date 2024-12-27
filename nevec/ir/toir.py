@@ -3,7 +3,7 @@ from nevec.ast.visit import Visit
 
 from nevec.ir.ir import *
 
-class ToIr(Visit[Ir]):
+class ToIr(Visit[Ast, Ir]):
     def visit_Parens(self, parens: Parens) -> Ir: 
         return self.visit(parens.expr)
 

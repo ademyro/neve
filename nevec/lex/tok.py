@@ -69,8 +69,8 @@ class TokType(Enum):
     DOT = auto()
     DOT_DOT = auto()
     
-    MINUS = auto()  
     PLUS = auto()
+    MINUS = auto()  
     STAR = auto()
     SLASH = auto()
     

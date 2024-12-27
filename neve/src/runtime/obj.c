@@ -49,7 +49,7 @@ void freeObj(Obj *obj) {
   }
 }
 
-size_t objAsStr(const char *buffer, Obj *obj) {
+uint32_t objAsStr(const char *buffer, Obj *obj) {
   if (obj->type == OBJ_STR) {
     ObjStr *str = (ObjStr *)obj;
 

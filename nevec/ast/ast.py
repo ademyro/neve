@@ -96,9 +96,7 @@ class BinOp(Expr):
 
     @staticmethod
     def from_tok(tok: Tok):
-        return BinOp.Op(
-            max(1, tok.type.value - TokType.MINUS.value)
-        )
+        return BinOp.Op(tok.type.value - TokType.PLUS.value + 1)
 
     def infer_type(self, base_type: Optional[Type]=None) -> Type:
         if self.left.type != self.right.type:

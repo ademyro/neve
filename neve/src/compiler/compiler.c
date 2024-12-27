@@ -86,7 +86,6 @@ static size_t readObj(
     }
 
     default:
-      fprintf(stderr, "%d\n", type);
       return UNEXPECTED_BYTE;
   }
 
@@ -197,6 +196,7 @@ bool compile(NeveVM *vm, const char *fname, Bytecode *bytecode, Chunk *ch) {
   }
 
   ch->code = (uint8_t *)(bytecode->bytes + offset);
+  ch->next = (uint32_t)(bytecode->length - offset - EOF_PADDING_SIZE);
 
   return true;
 }

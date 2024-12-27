@@ -3,6 +3,7 @@ import sys
 from nevec.check.check import Check
 from nevec.parse.parse import Parse
 from nevec.ir.toir import ToIr
+from nevec.compile.compile import Compile
 
 if __name__ == "__main__":
     args = sys.argv
@@ -29,4 +30,13 @@ if __name__ == "__main__":
 
         print(ast)
         print(ir)
+
+    output_file = filename.removesuffix(".neve") + ".geada"
+
+    with open(output_file, "wb") as f:
+        compile = Compile()
+        compile.visit(ir)
+
+        bytecode = compile.output(to=f)
+
 

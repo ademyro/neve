@@ -150,7 +150,7 @@ static Aftermath run(NeveVM *vm) {
         break;
 
       case OP_IS_NIL:
-        vm->stackTop[-1] = BOOL_VAL(!IS_VAL_NIL(vm->stackTop[-1]));
+        vm->stackTop[-1] = BOOL_VAL(IS_VAL_NIL(vm->stackTop[-1]));
         break;
 
       case OP_IS_ZERO:
@@ -178,9 +178,6 @@ static Aftermath run(NeveVM *vm) {
         break;
       }
 
-      /*
-      // TODO: reimplement this once we can
-
       case OP_INTERPOL: {
         const uint8_t times = READ_BYTE();
         const size_t initialSize = 32;
@@ -196,24 +193,26 @@ static Aftermath run(NeveVM *vm) {
         // we convert the top of the stack to a string and obtain this 
         // configuration:
         // [S] [E] [S] [E] [S] [S]
+        /*
         if (!endsWithStr) {
-            char *buffer = ALLOC(char, initialSize);
-            size_t length = valAsStr(buffer, vm->stackTop[-1]);
+          char *buffer = ALLOC(char, initialSize);
+          uint32_t length = valAsStr(buffer, vm->stackTop[-1]);
 
-            ObjStr *str = allocStr(vm, true, buffer, length);
-            vm->stackTop[-1] = OBJ_VAL(str);
+          ObjStr *str = allocStr(vm, true, buffer, length);
+          vm->stackTop[-1] = OBJ_VAL(str);
         }
+        */
 
         for (uint8_t i = 0; i < times; i++) {
           // not really proud of this but hey, it saves a bit of memory.
           if (shouldConvertToStr) {
-          const int8_t slot = -2;
+            const int8_t slot = -2;
 
-          char *buffer = ALLOC(char, initialSize);
-          size_t length = valAsStr(buffer, vm->stackTop[slot]);
+            char *buffer = ALLOC(char, initialSize);
+            uint32_t length = valAsStr(buffer, vm->stackTop[slot]);
 
-          ObjStr *str = allocStr(vm, true, buffer, length);
-          vm->stackTop[slot] = OBJ_VAL(str);
+            ObjStr *str = allocStr(vm, true, buffer, length);
+            vm->stackTop[slot] = OBJ_VAL(str);
           }
 
 #ifdef DEBUG_EXEC
@@ -225,7 +224,6 @@ static Aftermath run(NeveVM *vm) {
 
         break;
       }
-      */
 
       case OP_SHL:
         BIT_OP(<<);
@@ -305,6 +303,8 @@ Aftermath interpret(const char *fname, NeveVM *vm, Bytecode *bytecode) {
 
     return AFTERMATH_FILE_FORMAT_ERR;
   }
+
+  disasmChunk(&ch, "output");
 
   vm->ch = &ch;
   vm->ip = ch.code;

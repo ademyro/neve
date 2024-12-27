@@ -1,8 +1,10 @@
 from enum import auto, Enum
-from typing import Self
+from typing import Dict
 
 from nevec.ast.ast import *
 from nevec.ast.type import Type, Types
+
+from nevec.compile.opcode import Opcode
 
 from nevec.lex.tok import Loc
 
@@ -23,6 +25,9 @@ class IUnOp(Ir):
         IS_NIL = auto()
         IS_NOT_NIL = auto()
         IS_ZERO = auto()
+
+        def opcode(self) -> Opcode:
+            return Opcode(Opcode.NEG.value + self.value - 1)
 
 
     def __init__(self, op: Op, operand: Ir, loc: Loc, type: Type):
@@ -55,7 +60,7 @@ class IBinOp(Ir):
         SUB = auto()  
         MUL = auto()
         DIV = auto()
-        
+
         SHL = auto()
         SHR = auto()
         BIT_AND = auto()
@@ -70,6 +75,10 @@ class IBinOp(Ir):
         LTE = auto()
 
         CONCAT = auto()
+
+        def opcode(self) -> Opcode:
+            return Opcode(Opcode.ADD.value + self.value - 1)
+
 
     def __init__(
         self,
@@ -90,9 +99,10 @@ class IBinOp(Ir):
 
     def __repr__(self) -> str:
         if self.op_lexeme == "":
-            return f"{self.left} {self.right}"
+            return f"({self.left} {self.right})"
 
-        return f"{self.left} {self.op_lexeme} {self.right}"
+        return f"({self.left} {self.op_lexeme} {self.right})"
+
 
 class IInt(Ir):
     def __init__(self, value: int, loc: Loc, type: Type):
@@ -103,6 +113,7 @@ class IInt(Ir):
 
     def __repr__(self) -> str:
         return f"{self.value} as {self.type}"
+
 
 class IFloat(Ir):
     def __init__(self, value: float, loc: Loc, type: Type):

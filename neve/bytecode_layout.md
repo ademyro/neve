@@ -15,8 +15,8 @@
 )*
 [Header Separator (1 byte)]
 [Debug Header Length (2 bytes)]
-[Source File Path Length (2 bytes)]
-[Source File Path (variable size)]
+[Absolute Source File Path Length (2 bytes)]
+[Absolute Source File Path (variable size)]
 (
   [Instruction Offset (4 bytes)]
   [Line Number (4 bytes)]

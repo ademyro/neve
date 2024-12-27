@@ -89,13 +89,13 @@ bool valsEq(Val a, Val b) {
   return false;
 }
 
-size_t valAsStr(char *buffer, Val val) {
+uint32_t valAsStr(char *buffer, Val val) {
   switch (val.type) {
     case VAL_OBJ:
       return objAsStr(buffer, VAL_AS_OBJ(val));
 
     case VAL_NIL: {
-      const size_t length = 3;
+      const uint32_t length = 3;
 
       strncpy(buffer, "nil", length);
       return length;
@@ -108,10 +108,10 @@ size_t valAsStr(char *buffer, Val val) {
       // us to use magic values.
       // this is silly, but i also don’t want to disable the no-magic-values 
       // check.
-      const size_t trueLength = 4;
-      const size_t falseLength = 5;
+      const uint32_t trueLength = 4;
+      const uint32_t falseLength = 5;
 
-      const size_t length = isTrue ? trueLength : falseLength;
+      const uint32_t length = isTrue ? trueLength : falseLength;
       
       strncpy(buffer, isTrue ? "true" : "false", length);
 
@@ -119,9 +119,9 @@ size_t valAsStr(char *buffer, Val val) {
     }
 
     case VAL_NUM: {
-      const size_t bufferSize = 32;
+      const uint32_t bufferSize = 32;
 
-      const size_t length = (size_t)snprintf(
+      const uint32_t length = (uint32_t)snprintf(
         buffer, 
         bufferSize, 
         "%.14g", 

@@ -105,18 +105,24 @@ class ParseErr:
     def expected_expr(tok: Tok) -> Err:
         loc = tok.loc
 
+        is_at_end = tok.type == TokType.EOF
+        lexeme = tok.lexeme if not is_at_end else "end of file"
+
         err = Report.err(
             "expected an expression",
             loc
         ).show(
             Line(
                 loc,
-                header_msg=f"'{tok.lexeme}' is not considered an expression"
+                header_msg=f"'{lexeme}' is not considered an expression",
+                show_previous_line=is_at_end
             ).add(
                 Note(
                     NoteType.ERR,
                     loc,
-                    f"expected an expression, but found '{tok.lexeme}'"
+                    f"expected an expression, but found '{lexeme}'"
+                    if not is_at_end else
+                    "expected an expression, but found nothing" 
                 )
             )
         )
