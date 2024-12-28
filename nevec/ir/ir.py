@@ -24,7 +24,7 @@ class IExpr(Ir):
         self.reg: Reg = reg
 
 
-class IUnOp(Ir):
+class IUnOp(IExpr):
     class Op(Enum):
         NEG = auto() 
         NOT = auto()
@@ -36,11 +36,12 @@ class IUnOp(Ir):
             return Opcode(Opcode.NEG.value + self.value - 1)
 
 
-    def __init__(self, op: Op, operand: Ir, loc: Loc, type: Type):
+    def __init__(self, op: Op, operand: Ir, loc: Loc, type: Type, reg: Reg):
         self.op: IUnOp.Op = op
         self.operand: Ir = operand
         self.loc: Loc = loc
         self.type: Type = type
+        self.reg: Reg = reg
 
     def __repr__(self) -> str:
         match self.op:
@@ -60,7 +61,7 @@ class IUnOp(Ir):
                 return f"{self.operand} == 0"
 
 
-class IBinOp(Ir):
+class IBinOp(IExpr):
     class Op(Enum):
         ADD = auto()
         SUB = auto()  
@@ -93,7 +94,8 @@ class IBinOp(Ir):
         right: Ir,
         op_lexeme: str,
         loc: Loc,
-        type: Type
+        type: Type,
+        reg: Reg
     ):
         self.left: Ir = left
         self.op: IBinOp.Op = op
@@ -102,6 +104,7 @@ class IBinOp(Ir):
 
         self.loc: Loc = loc
         self.type = type
+        self.reg: Reg = reg
 
     def __repr__(self) -> str:
         if self.op_lexeme == "":
@@ -110,58 +113,63 @@ class IBinOp(Ir):
         return f"({self.left} {self.op_lexeme} {self.right})"
 
 
-class IInt(Ir):
-    def __init__(self, value: int, loc: Loc, type: Type):
+class IInt(IExpr):
+    def __init__(self, value: int, loc: Loc, type: Type, reg: Reg):
         self.value: int = value
 
         self.loc: Loc = loc
         self.type: Type = type
+        self.reg: Reg = reg
 
     def __repr__(self) -> str:
         return f"{self.value} as {self.type}"
 
 
-class IFloat(Ir):
-    def __init__(self, value: float, loc: Loc, type: Type):
+class IFloat(IExpr):
+    def __init__(self, value: float, loc: Loc, type: Type, reg: Reg):
         self.value: float = value
 
         self.loc: Loc = loc
         self.type: Type = type
+        self.reg: Reg = reg
 
     def __repr__(self) -> str:
         return f"{self.value} as {self.type}"
 
 
-class IBool(Ir):
-    def __init__(self, value: bool, loc: Loc):
+class IBool(IExpr):
+    def __init__(self, value: bool, loc: Loc, reg: Reg):
         self.value: bool = value
 
         self.loc: Loc = loc
         self.type: Type = Types.BOOL
+        self.reg: Reg = reg
 
     def __repr__(self) -> str:
         return str(self.value).lower()
 
 
-class IStr(Ir):
-    def __init__(self, value: str, loc: Loc, type: Type):
+class IStr(IExpr):
+    def __init__(self, value: str, loc: Loc, type: Type, reg: Reg):
         self.value: str = value
 
         self.loc: Loc = loc
         self.type: Type = type
+        self.reg: Reg = reg
 
     def __repr__(self) -> str:
         return f"\"{self.value}\" as {self.type}"
 
 
-class IInterpol(Ir):
+class IInterpol(IExpr):
     def __init__(
         self, 
         left: str, 
         expr: Ir, 
         next: Ir, # Self | IStr 
         loc: Loc,
-        type: Type
+        type: Type,
+        reg: Reg
     ):
         self.left: str = left
         self.expr: Ir = expr
@@ -169,6 +177,7 @@ class IInterpol(Ir):
 
         self.loc: Loc = loc
         self.type: Type = type
+        self.reg: Reg = reg
 
     def __repr__(self) -> str:
         return "".join(
@@ -183,10 +192,11 @@ class IInterpol(Ir):
         )
 
 
-class INil(Ir):
-    def __init__(self, loc: Loc):
+class INil(IExpr):
+    def __init__(self, loc: Loc, reg: Reg):
         self.loc: Loc = loc
         self.type: Type = Types.NIL
+        self.reg: Reg = reg
 
     def __repr__(self) -> str:
         return "nil"
