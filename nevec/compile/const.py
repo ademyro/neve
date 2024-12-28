@@ -47,6 +47,8 @@ class Num(Const[float]):
             self.value == other.value
         )
 
+    def __repr__(self) -> str:
+        return str(self.value)
 
 class StrLit(Const[str]):
     def emit(self) -> List[bytes]:
@@ -62,3 +64,6 @@ class StrLit(Const[str]):
             isinstance(other, StrLit) and
             self.value == other.value
         )
+
+    def __repr__(self) -> str:
+        return self.value

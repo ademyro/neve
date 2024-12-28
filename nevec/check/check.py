@@ -15,6 +15,9 @@ class Check(Visit[Ast, bool]):
 
         return True
 
+    def visit_Program(self, program: Program) -> bool:
+        return self.visit(program.expr)
+
     def visit_Parens(self, parens: Parens) -> bool: 
         return self.visit(parens.expr)
 

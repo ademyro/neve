@@ -24,13 +24,38 @@ class Ir:
 
 
 class IExpr(Ir):
-    def __init__(self, type: Type, loc: Loc, reg: Reg):
+    def __init__(self, type: Type, loc: Loc, reg: Reg, dependent: "Dependent"):
         self.type: Type = type
         self.loc: Loc = loc
         self.reg: Reg = reg
+        self.dependent: Dependent = dependent
 
     def freeze_reg(self):
         self.reg = self.reg.copy()
+
+
+class Dependent:
+    def __init__(self):
+        self.dependencies: List[IExpr] = []
+
+    def depends_on(self, what: IExpr):
+        if what.reg.state == Reg.State.TEMP:
+            what.reg.state = Reg.State.NECESSARY
+
+        self.dependencies.append(what)
+
+    def loosen_dependencies(self):
+        if self.dependencies == []:
+            return
+
+        node = self.dependencies.pop()
+
+        # node.dependent.loosen_dependencies()
+        node.reg.state = Reg.State.TEMP
+        node.freeze_reg()
+
+        self.loosen_dependencies()
+
 
 class IUnOp(IExpr):
     class Op(Enum):
@@ -44,12 +69,22 @@ class IUnOp(IExpr):
             return Opcode(Opcode.NEG.value + self.value - 1)
 
 
-    def __init__(self, op: Op, operand: Ir, loc: Loc, type: Type, reg: Reg):
+    def __init__(
+        self,
+        op: Op,
+        operand: Ir,
+        loc: Loc,
+        type: Type,
+        reg: Reg,
+        dependent: Dependent=Dependent()
+    ):
         self.op: IUnOp.Op = op
         self.operand: Ir = operand
+
         self.loc: Loc = loc
         self.type: Type = type
         self.reg: Reg = reg
+        self.dependent: Dependent = dependent
 
     def __repr__(self) -> str:
         match self.op:
@@ -103,7 +138,8 @@ class IBinOp(IExpr):
         op_lexeme: str,
         loc: Loc,
         type: Type,
-        reg: Reg
+        reg: Reg,
+        dependent: Dependent=Dependent()
     ):
         self.left: Ir = left
         self.op: IBinOp.Op = op
@@ -113,6 +149,7 @@ class IBinOp(IExpr):
         self.loc: Loc = loc
         self.type = type
         self.reg: Reg = reg
+        self.dependent: Dependent = dependent
 
     def __repr__(self) -> str:
         if self.op_lexeme == "":
@@ -122,48 +159,83 @@ class IBinOp(IExpr):
 
 
 class IInt(IExpr):
-    def __init__(self, value: int, loc: Loc, type: Type, reg: Reg):
+    def __init__(
+        self,
+        value: int,
+        loc: Loc,
+        type: Type,
+        reg: Reg,
+        dependent: Dependent=Dependent()
+    ):
         self.value: int = value
 
         self.loc: Loc = loc
         self.type: Type = type
         self.reg: Reg = reg
 
+        self.dependent: Dependent = dependent
+
     def __repr__(self) -> str:
         return f"{self.value} as {self.type}"
 
 
 class IFloat(IExpr):
-    def __init__(self, value: float, loc: Loc, type: Type, reg: Reg):
+    def __init__(
+        self,
+        value: float,
+        loc: Loc,
+        type: Type,
+        reg: Reg,
+        dependent: Dependent=Dependent()
+    ):
         self.value: float = value
 
         self.loc: Loc = loc
         self.type: Type = type
         self.reg: Reg = reg
 
+        self.dependent: Dependent = dependent
+
     def __repr__(self) -> str:
         return f"{self.value} as {self.type}"
 
 
 class IBool(IExpr):
-    def __init__(self, value: bool, loc: Loc, reg: Reg):
+    def __init__(
+        self,
+        value: bool,
+        loc: Loc,
+        reg: Reg,
+        dependent: Dependent=Dependent()
+    ):
         self.value: bool = value
 
         self.loc: Loc = loc
         self.type: Type = Types.BOOL
         self.reg: Reg = reg
 
+        self.dependent: Dependent = dependent
+
     def __repr__(self) -> str:
         return str(self.value).lower()
 
 
 class IStr(IExpr):
-    def __init__(self, value: str, loc: Loc, type: Type, reg: Reg):
+    def __init__(
+        self,
+        value: str,
+        loc: Loc,
+        type: Type,
+        reg: Reg,
+        dependent: Dependent=Dependent()
+    ):
         self.value: str = value
 
         self.loc: Loc = loc
         self.type: Type = type
         self.reg: Reg = reg
+
+        self.dependent: Dependent = dependent
 
     def __repr__(self) -> str:
         return f"\"{self.value}\" as {self.type}"
@@ -177,7 +249,8 @@ class IInterpol(IExpr):
         next: Ir, # Self | IStr 
         loc: Loc,
         type: Type,
-        reg: Reg
+        reg: Reg,
+        dependent: Dependent=Dependent()
     ):
         self.left: str = left
         self.expr: Ir = expr
@@ -186,6 +259,8 @@ class IInterpol(IExpr):
         self.loc: Loc = loc
         self.type: Type = type
         self.reg: Reg = reg
+
+        self.dependent: Dependent = dependent
 
     def __repr__(self) -> str:
         return "".join(
@@ -201,32 +276,17 @@ class IInterpol(IExpr):
 
 
 class INil(IExpr):
-    def __init__(self, loc: Loc, reg: Reg):
+    def __init__(
+        self,
+        loc: Loc,
+        reg: Reg,
+        dependent: Dependent=Dependent()
+    ):
         self.loc: Loc = loc
         self.type: Type = Types.NIL
         self.reg: Reg = reg
+        self.dependent: Dependent = dependent
 
     def __repr__(self) -> str:
         return "nil"
 
-
-class Dependent:
-    def __init__(self):
-        self.dependencies: List[IExpr] = []
-
-    def depends_on(self, what: IExpr):
-        if what.reg.state == Reg.State.TEMP:
-            what.reg.state = Reg.State.NECESSARY
-
-        self.dependencies.append(what)
-
-    def loosen_dependencies(self):
-        if self.dependencies == []:
-            return
-
-        node = self.dependencies.pop()
-
-        node.reg.state = Reg.State.TEMP
-        node.freeze_reg()
-
-        self.loosen_dependencies()

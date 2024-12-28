@@ -11,6 +11,17 @@ class Ast:
         self.loc = loc
 
 
+class Program(Ast):
+    def __init__(self, expr: "Expr"):
+        self.expr = expr
+
+    def infer_type(self) -> Type:
+        return self.expr.infer_type()
+
+    def __repr__(self) -> str:
+        return str(self.expr)
+
+
 class Expr(Ast):
     def __init__(self, type: Type, loc: Loc):
         self.type = type

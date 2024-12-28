@@ -8,6 +8,13 @@ class ToIr(Visit[Ast, Ir]):
     def __init__(self):
         self.reg_manager: RegManager = RegManager()
 
+    def visit_Program(self, program: Program) -> Ir:
+        expr = self.visit(program.expr).must_be_expr()
+
+        expr.dependent.loosen_dependencies()
+
+        return expr
+
     def visit_Parens(self, parens: Parens) -> Ir: 
         return self.visit(parens.expr)
 
@@ -19,7 +26,7 @@ class ToIr(Visit[Ast, Ir]):
             expr,
             un_op.loc,
             un_op.type,
-            self.reg_manager.next()
+            self.reg_manager.next(),
         )
 
     def visit_Bitwise(self, bitwise: Bitwise) -> IBinOp:
@@ -40,9 +47,12 @@ class ToIr(Visit[Ast, Ir]):
             IBinOp.Op(bitwise.op.value),
             right,
             op_lexeme,
+
             bitwise.loc,
             bitwise.type,
-            self.reg_manager.next()
+            self.reg_manager.next(),
+
+            dependent
         )
 
     def visit_Comparison(self, comparison: Comparison) -> IBinOp:
@@ -63,9 +73,12 @@ class ToIr(Visit[Ast, Ir]):
             IBinOp.Op(comparison.op.value),
             right,
             op_lexeme,
+
             comparison.loc,
             comparison.type,
-            self.reg_manager.next()
+            self.reg_manager.next(),
+
+            dependent
         )
 
     def visit_Arith(self, arith: Arith) -> IBinOp:
@@ -86,9 +99,12 @@ class ToIr(Visit[Ast, Ir]):
             IBinOp.Op(arith.op.value),
             right,
             op_lexeme,
+
             arith.loc,
             arith.type,
-            self.reg_manager.next()
+            self.reg_manager.next(),
+
+            dependent
         )
 
     def visit_Int(self, i: Int) -> IInt:

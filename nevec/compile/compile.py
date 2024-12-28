@@ -5,7 +5,7 @@ from nevec.compile.const import *
 from nevec.ir.ir import *
 from nevec.err.report import Report
 
-class Compile(Visit[Ir, None]):
+class Compile(Visit[Ir, Reg]):
     NEVE_MAGIC_NUMBER = 0xbadbed00
     NEVE_HEADER_SEPARATOR = 0x1c
     NEVE_EOF_PADDING_BYTE = 0xff
@@ -48,7 +48,7 @@ class Compile(Visit[Ir, None]):
 
     def finalize(self):
         last_line = self.debug_header_bytes[-1]
-        self.emit_byte(Opcode.RET, int.from_bytes(last_line))
+        self.emit_bytes(Opcode.RET, 0, int.from_bytes(last_line))
 
         debug_header_length = self.encode_int(self.debug_header_length, 2)
 
@@ -124,56 +124,78 @@ class Compile(Visit[Ir, None]):
         self.emit_byte(a, line)
         self.emit_byte(b, line)
 
-    def emit_const[T](self, const_type: type, value: T, line: int):
+    def emit_const[T](self, const_type: type, value: T, reg: Reg, line: int):
         const = self.make_const(const_type, value)
 
         const_index = self.const_indices[const.id]
 
         # TODO: implement for Opcode.CONST_LONG
         self.emit_bytes(Opcode.CONST, const_index, line)
+        self.emit_byte(reg.emit(), line)
 
-    def visit_IUnOp(self, un_op: IUnOp):
-        self.visit(un_op.operand)
+    def visit_IUnOp(self, un_op: IUnOp) -> Reg:
+        operand = self.visit(un_op.operand)
+        output = un_op.reg
 
         self.emit_byte(un_op.op.opcode(), un_op.loc.line)
+        self.emit_bytes(operand.emit(), output.emit(), un_op.loc.line)
 
-    def visit_IBinOp(self, bin_op: IBinOp):
-        self.visit(bin_op.left)
-        self.visit(bin_op.right)
+        return output 
+
+    def visit_IBinOp(self, bin_op: IBinOp) -> Reg:
+        left = self.visit(bin_op.left)
+        right = self.visit(bin_op.right)
+
+        output = bin_op.reg
 
         self.emit_byte(bin_op.op.opcode(), bin_op.loc.line)
+        self.emit_bytes(left.emit(), right.emit(), bin_op.loc.line)
+        self.emit_byte(output.emit(), bin_op.loc.line)
 
-    def visit_IInt(self, i: IInt):
+        return output
+
+    def visit_IInt(self, i: IInt) -> Reg:
+        reg = i.reg
         line = i.loc.line
 
         match i.value:
             case 0:
-                self.emit_byte(Opcode.ZERO, line)
-                return
+                self.emit_bytes(Opcode.ZERO, reg.emit(), line)
+                return reg
 
             case 1:
-                self.emit_byte(Opcode.ONE, line)
-                return
+                self.emit_bytes(Opcode.ONE, reg.emit(), line)
+                return reg
 
             case -1:
-                self.emit_byte(Opcode.MINUS_ONE, line)
-                return
+                self.emit_bytes(Opcode.MINUS_ONE, reg.emit(), line)
+                return reg
 
-        self.emit_const(Num, i.value, line)
+        self.emit_const(Num, i.value, reg, line)
+        return reg
 
-    def visit_IFloat(self, f: IFloat):
-        self.emit_const(Num, f.value, f.loc.line)
+    def visit_IFloat(self, f: IFloat) -> Reg:
+        self.emit_const(Num, f.value, f.reg, f.loc.line)
+
+        return f.reg
     
-    def visit_IBool(self, b: IBool):
-        self.emit_byte(
+    def visit_IBool(self, b: IBool) -> Reg:
+        self.emit_bytes(
             Opcode.TRUE if b.value else Opcode.FALSE,
+            b.reg.emit(),
             b.loc.line
         )
+
+        return b.reg
        
     def visit_IStr(self, s: IStr):
-        self.emit_const(StrLit, s.value, s.loc.line)
+        self.emit_const(StrLit, s.value, s.reg, s.loc.line)
 
-    def visit_IInterpol(self, interpol: IInterpol):
+        return s.reg
+
+    def visit_IInterpol(self, interpol: IInterpol) -> Reg:
+        _ = interpol
+
         raise NotImplementedError()
         # def emit(next: Ir) -> int:
         #     if not isinstance(next, IInterpol):
@@ -193,5 +215,7 @@ class Compile(Visit[Ir, None]):
         # self.emit_bytes(Opcode.INTERPOL, times, interpol.loc.line)
 
     def visit_INil(self, nil: INil):
-        self.emit_byte(Opcode.NIL, nil.loc.line)
+        self.emit_bytes(Opcode.NIL, nil.reg.emit(), nil.loc.line)
+
+        return nil.reg
         

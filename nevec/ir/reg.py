@@ -22,6 +22,12 @@ class Reg:
     def freeze(self):
         self = self.copy()
 
+    def emit(self) -> int:
+        return self.index
+
+    def __repr__(self) -> str:
+        return f"r{self.index}"
+
 class RegManager:
     def __init__(self):
         self.regs: List[Reg] = []
@@ -43,3 +49,6 @@ class RegManager:
             return head
 
         return self.next(regs[1:])
+
+    def next_index(self) -> int:
+        return len(self.regs)

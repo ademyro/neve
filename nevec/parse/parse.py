@@ -222,7 +222,7 @@ class Parse:
             del ast
             return Ast(Types.UNKNOWN, Loc.new())
         
-        return ast
+        return Program(ast)
 
     def expr(self) -> Expr:
         return self.bit_or()
