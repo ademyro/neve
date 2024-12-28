@@ -19,6 +19,8 @@ class Reg:
     def copy(self) -> "Reg":
         return Reg(self.index, self.state)
 
+    def freeze(self):
+        self = self.copy()
 
 class RegManager:
     def __init__(self):

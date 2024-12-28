@@ -29,6 +29,8 @@ class IExpr(Ir):
         self.loc: Loc = loc
         self.reg: Reg = reg
 
+    def freeze_reg(self):
+        self.reg = self.reg.copy()
 
 class IUnOp(IExpr):
     class Op(Enum):
@@ -225,6 +227,6 @@ class Dependent:
         node = self.dependencies.pop()
 
         node.reg.state = Reg.State.TEMP
-        node.reg = node.reg.copy()
+        node.freeze_reg()
 
         self.loosen_dependencies()
