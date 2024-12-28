@@ -15,6 +15,12 @@ class Ir:
     def __init__(self, type: Type, loc: Loc):
         self.type: Type = type
         self.loc: Loc = loc
+    
+    def must_be_expr(self) -> "IExpr":
+        if not isinstance(self, IExpr):
+            raise ValueError("malformed IR")
+        
+        return self
 
 
 class IExpr(Ir):
