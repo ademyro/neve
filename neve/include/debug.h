@@ -3,7 +3,7 @@
 
 #include "chunk.h"
 
-void disasmChunk(Chunk *ch, const char *name);
-size_t disasmInstr(Chunk *ch, size_t offset);
+void disasmChunk(Chunk *ch, Val *regs, const char *name);
+size_t disasmInstr(Chunk *ch, Val *regs, size_t offset);
 
 #endif

@@ -16,7 +16,7 @@
 static void printStack(NeveVM *vm) {
   printf("    ");
 
-  for (Val *v = vm->stack; v < vm->stackTop; v++) {
+  for (Val *v = vm->regs; v < vm->top; v++) {
     printf("[");
     printVal(*v);
     printf("] ");
@@ -40,12 +40,19 @@ void freeVM(NeveVM *vm) {
 }
 
 void resetStack(NeveVM *vm) {
-  vm->stackTop = vm->stack;
+  vm->top = vm->regs;
 }
 
+#define READ_BYTE() (*vm->ip++)
+#define READ_CONST() (vm->ch->consts.consts[READ_BYTE()])
+
 static void concat(NeveVM *vm) {
-  ObjStr *b = VAL_AS_STR(pop(vm));
-  ObjStr *a = VAL_AS_STR(pop(vm));
+  uint8_t regA = READ_BYTE();
+  uint8_t regB = READ_BYTE();
+  uint8_t regC = READ_BYTE();
+
+  ObjStr *a = VAL_AS_STR(vm->regs[regA]);
+  ObjStr *b = VAL_AS_STR(vm->regs[regB]);
 
   uint32_t length = a->length + b->length;
 
@@ -57,26 +64,32 @@ static void concat(NeveVM *vm) {
   chars[length] = '\0';
 
   ObjStr *result = allocStr(vm, true, chars, length);
-  push(vm, OBJ_VAL(result));
+  vm->regs[regC] = OBJ_VAL(result);
 }
 
 // NOLINTBEGIN
 static Aftermath run(NeveVM *vm) {
-#define READ_BYTE() (*vm->ip++)
-#define READ_CONST() (vm->ch->consts.consts[READ_BYTE()])
 #define BIN_OP(valType, op)                                     \
   do {                                                          \
-    double b = VAL_AS_NUM(pop(vm));                             \
-    double a = VAL_AS_NUM(pop(vm));                             \
+    uint8_t regA = READ_BYTE();                                 \
+    uint8_t regB = READ_BYTE();                                 \
+    uint8_t regC = READ_BYTE();                                 \
                                                                 \
-    push(vm, valType(a op b));                                  \
-  } while (false)
+    double a = VAL_AS_NUM(vm->regs[regA]);                      \
+    double b = VAL_AS_NUM(vm->regs[regB]);                      \
+                                                                \
+    vm->regs[regC] = NUM_VAL(a op b);                           \
+  } while (false)                                               
 #define BIT_OP(op)                                              \
   do {                                                          \
-    int b = (int)VAL_AS_NUM(pop(vm));                           \
-    int a = (int)VAL_AS_NUM(pop(vm));                           \
+    uint8_t regA = READ_BYTE();                                 \
+    uint8_t regB = READ_BYTE();                                 \
+    uint8_t regC = READ_BYTE();                                 \
                                                                 \
-    push(vm, NUM_VAL(a op b));                                  \
+    int a = (int)VAL_AS_NUM(vm->regs[regA]);                    \
+    int b = (int)VAL_AS_NUM(vm->regs[regB]);                    \
+                                                                \
+    vm->regs[regC] = NUM_VAL(a op b);                           \
   } while (false)
 
   while (true) {
@@ -84,7 +97,7 @@ static Aftermath run(NeveVM *vm) {
     printStack(vm);
 
     const uint32_t offset = (uint32_t)(vm->ip - vm->ch->code);
-    disasmInstr(vm->ch, offset);
+    disasmInstr(vm->ch, vm->regs, offset);
 #endif
 
     const uint8_t instr = READ_BYTE();
@@ -92,8 +105,9 @@ static Aftermath run(NeveVM *vm) {
     switch (instr) {
       case OP_CONST: {
         const Val val = READ_CONST();
+        const uint8_t dest = READ_BYTE();
 
-        push(vm, val);
+        vm->regs[dest] = val;
         break;
       }
       
@@ -111,51 +125,69 @@ static Aftermath run(NeveVM *vm) {
           (ch->code[offset + 3] << byteLength * 2)
         );
 
+        const uint8_t dest = READ_BYTE();
+
         const Val val = ch->consts.consts[constOffset]; 
 
-        push(vm, val);
+        vm->regs[dest] = val;
         break;
       }
 
       case OP_TRUE:
-        push(vm, BOOL_VAL(true));
+        vm->regs[READ_BYTE()] = BOOL_VAL(true);
         break;
 
       case OP_FALSE:
-        push(vm, BOOL_VAL(false));
+        vm->regs[READ_BYTE()] = BOOL_VAL(false);
         break;
 
       case OP_NIL:
-        push(vm, NIL_VAL);
+        vm->regs[READ_BYTE()] = NIL_VAL;
         break;
 
       case OP_ZERO:
-        push(vm, NUM_VAL(0));
+        vm->regs[READ_BYTE()] = NUM_VAL(0);
         break;
 
       case OP_ONE:
-        push(vm, NUM_VAL(1));
+        vm->regs[READ_BYTE()] = NUM_VAL(1);
         break;
 
       case OP_MINUS_ONE:
-        push(vm, NUM_VAL(-1));
+        vm->regs[READ_BYTE()] = NUM_VAL(-1);
         break;
 
-      case OP_NEG:
-        vm->stackTop[-1] = NUM_VAL(-VAL_AS_NUM(vm->stackTop[-1]));
-        break;
+      case OP_NEG: {
+        uint8_t operandReg = READ_BYTE(); 
+        uint8_t outputReg = READ_BYTE();
 
-      case OP_NOT:
-        vm->stackTop[-1] = BOOL_VAL(!VAL_AS_BOOL(vm->stackTop[-1]));
+        vm->regs[outputReg] = NUM_VAL(-VAL_AS_NUM(vm->regs[operandReg]));
         break;
+      }
 
-      case OP_IS_NIL:
-        vm->stackTop[-1] = BOOL_VAL(IS_VAL_NIL(vm->stackTop[-1]));
-        break;
+      case OP_NOT: {
+        uint8_t operandReg = READ_BYTE(); 
+        uint8_t outputReg = READ_BYTE();
 
-      case OP_IS_ZERO:
-        vm->stackTop[-1] = BOOL_VAL(VAL_AS_NUM(vm->stackTop[-1]) == 0);
+        vm->regs[outputReg] = BOOL_VAL(!VAL_AS_BOOL(vm->regs[operandReg]));
         break;
+      }
+
+      case OP_IS_NIL: {
+        uint8_t operandReg = READ_BYTE(); 
+        uint8_t outputReg = READ_BYTE();
+
+        vm->regs[outputReg] = BOOL_VAL(IS_VAL_NIL(vm->regs[operandReg]));
+        break;
+      }
+
+      case OP_IS_ZERO: {
+        uint8_t operandReg = READ_BYTE(); 
+        uint8_t outputReg = READ_BYTE();
+
+        vm->regs[outputReg] = BOOL_VAL(VAL_AS_NUM(vm->regs[operandReg]) == 0);
+        break;
+      }
 
       case OP_ADD:
         BIN_OP(NUM_VAL, +);
@@ -178,6 +210,7 @@ static Aftermath run(NeveVM *vm) {
         break;
       }
 
+      /*
       case OP_INTERPOL: {
         const uint8_t times = READ_BYTE();
         const size_t initialSize = 32;
@@ -193,15 +226,13 @@ static Aftermath run(NeveVM *vm) {
         // we convert the top of the stack to a string and obtain this 
         // configuration:
         // [S] [E] [S] [E] [S] [S]
-        /*
         if (!endsWithStr) {
           char *buffer = ALLOC(char, initialSize);
-          uint32_t length = valAsStr(buffer, vm->stackTop[-1]);
+          uint32_t length = valAsStr(buffer, vm->top[-1]);
 
           ObjStr *str = allocStr(vm, true, buffer, length);
-          vm->stackTop[-1] = OBJ_VAL(str);
+          vm->top[-1] = OBJ_VAL(str);
         }
-        */
 
         for (uint8_t i = 0; i < times; i++) {
           // not really proud of this but hey, it saves a bit of memory.
@@ -209,10 +240,10 @@ static Aftermath run(NeveVM *vm) {
             const int8_t slot = -2;
 
             char *buffer = ALLOC(char, initialSize);
-            uint32_t length = valAsStr(buffer, vm->stackTop[slot]);
+            uint32_t length = valAsStr(buffer, vm->top[slot]);
 
             ObjStr *str = allocStr(vm, true, buffer, length);
-            vm->stackTop[slot] = OBJ_VAL(str);
+            vm->top[slot] = OBJ_VAL(str);
           }
 
 #ifdef DEBUG_EXEC
@@ -224,6 +255,7 @@ static Aftermath run(NeveVM *vm) {
 
         break;
       }
+      */
 
       case OP_SHL:
         BIT_OP(<<);
@@ -246,18 +278,26 @@ static Aftermath run(NeveVM *vm) {
         break;
 
       case OP_EQ: {
-        Val b = pop(vm);
-        Val a = pop(vm);
+        uint8_t regA = READ_BYTE();
+        uint8_t regB = READ_BYTE();
+        uint8_t regC = READ_BYTE();
 
-        push(vm, BOOL_VAL(valsEq(a, b)));
+        Val a = vm->regs[regA];
+        Val b = vm->regs[regB];
+
+        vm->regs[regC] = BOOL_VAL(valsEq(a, b));
         break;
       }
 
       case OP_NEQ: {
-        Val b = pop(vm);
-        Val a = pop(vm);
+        uint8_t regA = READ_BYTE();
+        uint8_t regB = READ_BYTE();
+        uint8_t regC = READ_BYTE();
 
-        push(vm, BOOL_VAL(!valsEq(a, b)));
+        Val a = vm->regs[regA];
+        Val b = vm->regs[regB];
+
+        vm->regs[regC] = BOOL_VAL(!valsEq(a, b));
         break;
       }
 
@@ -277,10 +317,15 @@ static Aftermath run(NeveVM *vm) {
         BIN_OP(BOOL_VAL, <=);
         break;
 
-      case OP_RET:
-        printVal(pop(vm));
+      case OP_RET: {
+        uint8_t reg = READ_BYTE();
+        Val val = vm->regs[reg];
+
+        printVal(val);
         printf("\n");
+
         return AFTERMATH_OK;
+      }
 
       default:
         // TODO: add an error message
@@ -303,8 +348,6 @@ Aftermath interpret(const char *fname, NeveVM *vm, Bytecode *bytecode) {
 
     return AFTERMATH_FILE_FORMAT_ERR;
   }
-
-  disasmChunk(&ch, "output");
 
   vm->ch = &ch;
   vm->ip = ch.code;
@@ -332,16 +375,4 @@ Aftermath interpret(const char *fname, NeveVM *vm, Bytecode *bytecode) {
 
   IGNORE(run);
   return AFTERMATH_OK;
-}
-
-void push(NeveVM *vm, Val val) {
-  *vm->stackTop = val;
-
-  vm->stackTop++;
-}
-
-Val pop(NeveVM *vm) {
-  vm->stackTop--;
-
-  return *vm->stackTop;
 }

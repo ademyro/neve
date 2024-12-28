@@ -11,8 +11,8 @@ typedef struct {
   Chunk *ch;
   uint8_t *ip;
 
-  Val stack[STACK_MAX];
-  Val *stackTop;
+  Val regs[STACK_MAX];
+  Val *top;
 
   Obj *objs;
 } NeveVM;
@@ -29,8 +29,5 @@ void freeVM(NeveVM *vm);
 void resetStack(NeveVM *vm);
 
 Aftermath interpret(const char *fname, NeveVM *vm, Bytecode *bytecode);
-
-void push(NeveVM *vm, Val val);
-Val pop(NeveVM *vm);
 
 #endif
