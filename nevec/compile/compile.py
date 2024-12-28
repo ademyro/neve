@@ -1,5 +1,3 @@
-import struct
-
 from typing import BinaryIO, List, Any, Dict
 
 from nevec.ast.visit import Visit

@@ -19,7 +19,7 @@ class ToIr(Visit[Ast, Ir]):
             expr,
             un_op.loc,
             un_op.type,
-            expr.reg
+            self.reg_manager.next()
         )
 
     def visit_Bitwise(self, bitwise: Bitwise) -> IBinOp:
