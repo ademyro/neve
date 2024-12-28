@@ -1,5 +1,6 @@
+from typing import List
+
 from enum import auto, Enum
-from typing import Dict
 
 from nevec.ast.ast import *
 from nevec.ast.type import Type, Types
@@ -8,6 +9,8 @@ from nevec.compile.opcode import Opcode
 
 from nevec.lex.tok import Loc
 
+from nevec.ir.reg import Reg
+
 class Ir:
     def __init__(self, type: Type, loc: Loc):
         self.type: Type = type
@@ -15,7 +18,10 @@ class Ir:
 
 
 class IExpr(Ir):
-    ...
+    def __init__(self, type: Type, loc: Loc, reg: Reg):
+        self.type: Type = type
+        self.loc: Loc = loc
+        self.reg: Reg = reg
 
 
 class IUnOp(Ir):
@@ -184,3 +190,25 @@ class INil(Ir):
 
     def __repr__(self) -> str:
         return "nil"
+
+
+class Dependent:
+    def __init__(self):
+        self.dependencies: List[IExpr] = []
+
+    def depends_on(self, what: IExpr):
+        if what.reg.state == Reg.State.TEMP:
+            what.reg.state = Reg.State.NECESSARY
+
+        self.dependencies.append(what)
+
+    def loosen_dependencies(self):
+        if self.dependencies == []:
+            return
+
+        node = self.dependencies.pop()
+
+        node.reg.state = Reg.State.TEMP
+        node.reg = node.reg.copy()
+
+        self.loosen_dependencies()
