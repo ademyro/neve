@@ -3,26 +3,48 @@
 #include "debug.h"
 #include "val.h"
 
+static size_t printReg(Chunk *ch, Val *regs, size_t offset) {
+  const uint8_t reg = ch->code[offset];
+  const Val val = regs[reg];
+
+  printf("  r%u: ", reg);
+  printVal(val);
+  printf("    ");
+
+  return offset + 1;
+}
+
 static size_t simpleInstr(const char *name, size_t offset) {
   printf("%-8s\n", name);
 
   return offset + 1;
 }
 
-static size_t constInstr(const char *name, Chunk *ch, size_t offset) {
+static size_t constInstr(
+  const char *name, 
+  Chunk *ch, 
+  Val *regs, 
+  size_t offset
+) {
   const uint8_t constOffset = ch->code[offset + 1];
   const uint8_t dest = ch->code[offset + 2];
+
+  offset = printReg(ch, regs, offset + 2);
 
   printf("%-8s ", name);
   printVal(ch->consts.consts[constOffset]);
   printf(" r%u (%u)\n", dest, constOffset);
 
-  return offset + 3;
+  return offset + 1;
 }
 
-static size_t longConstInstr(const char *name, Chunk *ch, size_t offset) {
+static size_t longConstInstr(
+  const char *name, 
+  Chunk *ch, 
+  Val *regs,
+  size_t offset
+) {
   const uint8_t byteLength = 8;
-  const uint8_t instrLength = 5;
 
   const uint32_t constOffset = (uint32_t)(
     ch->code[offset + 1] |
@@ -31,21 +53,20 @@ static size_t longConstInstr(const char *name, Chunk *ch, size_t offset) {
   );
 
   const uint8_t dest = ch->code[offset + 4];
+  offset = printReg(ch, regs, offset + 4);
 
   printf("%-8s ", name);
   printVal(ch->consts.consts[constOffset]);
   printf(" r%u (%u)\n", dest, constOffset);
 
-  return offset + instrLength;
+  return offset + 1;
 }
 
 static size_t regInstr(const char *name, Chunk *ch, Val *regs, size_t offset) {
   const uint8_t reg = ch->code[offset + 1];
   const Val val = regs[reg];
 
-  printf("  r%u: ", reg);
-  printVal(val);
-  printf("\n");
+  offset = printReg(ch, regs, offset + 1);
 
   printf("%-8s r%u\n", name, reg);
 
@@ -63,12 +84,7 @@ static size_t manyRegInstr(
 
   // i'm sorry about this, but it's the easiest way to make this work
   for (uint8_t i = 0; i < regCount; i++) {
-    uint8_t reg = ch->code[offset + 1];
-    Val val = regs[reg];
-
-    printf("r%u: ", reg);
-    printVal(val);
-    printf("    ");
+    offset = printReg(ch, regs, offset + 1);
   }
 
   printf("\n%-8s ", name);
@@ -113,10 +129,10 @@ size_t disasmInstr(Chunk *ch, Val *regs, size_t offset) {
       return regInstr("ret", ch, regs, offset);
 
     case OP_CONST_LONG:
-      return longConstInstr("pushl", ch, offset);
+      return longConstInstr("pushl", ch, regs, offset);
     
     case OP_CONST:
-      return constInstr("push", ch, offset);
+      return constInstr("push", ch, regs, offset);
 
     case OP_TRUE:
       return simpleInstr("true", offset);
