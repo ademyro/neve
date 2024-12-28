@@ -1,4 +1,4 @@
-from typing import Self, List, Optional
+from typing import List, Optional
 
 from enum import auto, Enum
 
