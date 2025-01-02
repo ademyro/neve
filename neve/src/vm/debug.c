@@ -31,10 +31,10 @@ static size_t constInstr(
   Val *regs, 
   size_t offset
 ) {
-  const uint8_t constOffset = ch->code[offset + 1];
-  const uint8_t dest = ch->code[offset + 2];
+  const uint8_t dest = ch->code[offset + 1];
+  const uint8_t constOffset = ch->code[offset + 2];
 
-  offset = printReg(ch, regs, offset + 2);
+  offset = printReg(ch, regs, offset + 1);
 
   printOffset(offset);
   printf("%-8s r%u  ", name, dest);
@@ -94,13 +94,16 @@ static size_t manyRegInstr(
   size_t newOffset = offset + 1;
   for (uint8_t i = 0; i < regCount; i++) {
     const uint8_t reg = ch->code[newOffset];
-    regsInvolved[i] = (int8_t)reg;
-
     bool isAlreadyListed = false;
 
     for (uint8_t j = 0; j < regCount; j++) {
-      isAlreadyListed = regsInvolved[j] == (int8_t)reg;
+      if (regsInvolved[j] == (int8_t)reg) {
+        isAlreadyListed = true;
+      }
     }
+
+    regsInvolved[i] = (int8_t)reg;
+
 
     if (isAlreadyListed) {
       newOffset++;

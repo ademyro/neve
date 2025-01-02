@@ -130,15 +130,15 @@ class Compile(Visit[Ir, Reg]):
         const_index = self.const_indices[const.id]
 
         # TODO: implement for Opcode.CONST_LONG
-        self.emit_bytes(Opcode.CONST, const_index, line)
-        self.emit_byte(reg.emit(), line)
+        self.emit_bytes(Opcode.CONST, reg.emit(), line)
+        self.emit_byte(const_index, line)
 
     def visit_IUnOp(self, un_op: IUnOp) -> Reg:
         operand = self.visit(un_op.operand)
         output = un_op.reg
 
-        self.emit_byte(un_op.op.opcode(), un_op.loc.line)
         self.emit_bytes(operand.emit(), output.emit(), un_op.loc.line)
+        self.emit_byte(un_op.op.opcode(), un_op.loc.line)
 
         return output 
 
@@ -149,8 +149,8 @@ class Compile(Visit[Ir, Reg]):
         output = bin_op.reg
 
         self.emit_byte(bin_op.op.opcode(), bin_op.loc.line)
-        self.emit_bytes(left.emit(), right.emit(), bin_op.loc.line)
         self.emit_byte(output.emit(), bin_op.loc.line)
+        self.emit_bytes(left.emit(), right.emit(), bin_op.loc.line)
 
         return output
 

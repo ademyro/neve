@@ -47,12 +47,10 @@ void resetStack(NeveVM *vm) {
 #define READ_CONST() (vm->ch->consts.consts[READ_BYTE()])
 
 static void concat(NeveVM *vm) {
-  uint8_t regA = READ_BYTE();
-  uint8_t regB = READ_BYTE();
   uint8_t regC = READ_BYTE();
 
-  ObjStr *a = VAL_AS_STR(vm->regs[regA]);
-  ObjStr *b = VAL_AS_STR(vm->regs[regB]);
+  ObjStr *a = VAL_AS_STR(vm->regs[READ_BYTE()]);
+  ObjStr *b = VAL_AS_STR(vm->regs[READ_BYTE()]);
 
   uint32_t length = a->length + b->length;
 
@@ -69,27 +67,25 @@ static void concat(NeveVM *vm) {
 
 // NOLINTBEGIN
 static Aftermath run(NeveVM *vm) {
-#define BIN_OP(valType, op)                                     \
-  do {                                                          \
-    uint8_t regA = READ_BYTE();                                 \
-    uint8_t regB = READ_BYTE();                                 \
-    uint8_t regC = READ_BYTE();                                 \
-                                                                \
-    double a = VAL_AS_NUM(vm->regs[regA]);                      \
-    double b = VAL_AS_NUM(vm->regs[regB]);                      \
-                                                                \
-    vm->regs[regC] = NUM_VAL(a op b);                           \
-  } while (false)                                               
-#define BIT_OP(op)                                              \
-  do {                                                          \
-    uint8_t regA = READ_BYTE();                                 \
-    uint8_t regB = READ_BYTE();                                 \
-    uint8_t regC = READ_BYTE();                                 \
-                                                                \
-    int a = (int)VAL_AS_NUM(vm->regs[regA]);                    \
-    int b = (int)VAL_AS_NUM(vm->regs[regB]);                    \
-                                                                \
-    vm->regs[regC] = NUM_VAL(a op b);                           \
+#define BIN_OP(valType, op)                                                   \
+  do {                                                                        \
+    const uint8_t regC = READ_BYTE();                                         \
+    const uint8_t regA = READ_BYTE();                                         \
+    const uint8_t regB = READ_BYTE();                                         \
+                                                                              \
+    vm->regs[regC] = NUM_VAL(                                                 \
+      VAL_AS_NUM(vm->regs[regA]) op VAL_AS_NUM(vm->regs[regB])                \
+    );                                                                        \
+  } while (false)
+#define BIT_OP(op)                                                            \
+  do {                                                                        \
+    const uint8_t regC = READ_BYTE();                                         \
+    const uint8_t regA = READ_BYTE();                                         \
+    const uint8_t regB = READ_BYTE();                                         \
+                                                                              \
+    vm->regs[regC] = NUM_VAL(                                                 \
+      (int)VAL_AS_NUM(vm->regs[regA]) op (int)VAL_AS_NUM(vm->regs[regB])      \
+    );                                                                        \
   } while (false)
 
   while (true) {
@@ -104,10 +100,9 @@ static Aftermath run(NeveVM *vm) {
 
     switch (instr) {
       case OP_CONST: {
-        const Val val = READ_CONST();
-        const uint8_t dest = READ_BYTE();
+        const uint8_t reg = READ_BYTE();
 
-        vm->regs[dest] = val;
+        vm->regs[reg] = READ_CONST();
         break;
       }
       
@@ -125,11 +120,9 @@ static Aftermath run(NeveVM *vm) {
           (ch->code[offset + 3] << byteLength * 2)
         );
 
-        const uint8_t dest = READ_BYTE();
-
         const Val val = ch->consts.consts[constOffset]; 
 
-        vm->regs[dest] = val;
+        vm->regs[READ_BYTE()] = val;
         break;
       }
 
@@ -157,37 +150,21 @@ static Aftermath run(NeveVM *vm) {
         vm->regs[READ_BYTE()] = NUM_VAL(-1);
         break;
 
-      case OP_NEG: {
-        uint8_t operandReg = READ_BYTE(); 
-        uint8_t outputReg = READ_BYTE();
-
-        vm->regs[outputReg] = NUM_VAL(-VAL_AS_NUM(vm->regs[operandReg]));
+      case OP_NEG:
+        vm->regs[READ_BYTE()] = NUM_VAL(-VAL_AS_NUM(vm->regs[READ_BYTE()]));
         break;
-      }
 
-      case OP_NOT: {
-        uint8_t operandReg = READ_BYTE(); 
-        uint8_t outputReg = READ_BYTE();
-
-        vm->regs[outputReg] = BOOL_VAL(!VAL_AS_BOOL(vm->regs[operandReg]));
+      case OP_NOT:
+        vm->regs[READ_BYTE()] = BOOL_VAL(!VAL_AS_BOOL(vm->regs[READ_BYTE()]));
         break;
-      }
 
-      case OP_IS_NIL: {
-        uint8_t operandReg = READ_BYTE(); 
-        uint8_t outputReg = READ_BYTE();
-
-        vm->regs[outputReg] = BOOL_VAL(IS_VAL_NIL(vm->regs[operandReg]));
+      case OP_IS_NIL:
+        vm->regs[READ_BYTE()] = BOOL_VAL(IS_VAL_NIL(vm->regs[READ_BYTE()]));
         break;
-      }
 
-      case OP_IS_ZERO: {
-        uint8_t operandReg = READ_BYTE(); 
-        uint8_t outputReg = READ_BYTE();
-
-        vm->regs[outputReg] = BOOL_VAL(VAL_AS_NUM(vm->regs[operandReg]) == 0);
+      case OP_IS_ZERO:
+        vm->regs[READ_BYTE()] = BOOL_VAL(VAL_AS_NUM(vm->regs[READ_BYTE()]) == 0);
         break;
-      }
 
       case OP_ADD:
         BIN_OP(NUM_VAL, +);
@@ -278,26 +255,26 @@ static Aftermath run(NeveVM *vm) {
         break;
 
       case OP_EQ: {
-        uint8_t regA = READ_BYTE();
-        uint8_t regB = READ_BYTE();
-        uint8_t regC = READ_BYTE();
+        const uint8_t regC = READ_BYTE();
+        const uint8_t regA = READ_BYTE();
+        const uint8_t regB = READ_BYTE();
 
-        Val a = vm->regs[regA];
-        Val b = vm->regs[regB];
+        vm->regs[regC] = BOOL_VAL(valsEq(
+          vm->regs[regA], vm->regs[regB]
+        ));
 
-        vm->regs[regC] = BOOL_VAL(valsEq(a, b));
         break;
       }
 
       case OP_NEQ: {
-        uint8_t regA = READ_BYTE();
-        uint8_t regB = READ_BYTE();
-        uint8_t regC = READ_BYTE();
+        const uint8_t regC = READ_BYTE();
+        const uint8_t regA = READ_BYTE();
+        const uint8_t regB = READ_BYTE();
 
-        Val a = vm->regs[regA];
-        Val b = vm->regs[regB];
+        vm->regs[regC] = BOOL_VAL(!valsEq(
+          vm->regs[regA], vm->regs[regB]
+        ));
 
-        vm->regs[regC] = BOOL_VAL(!valsEq(a, b));
         break;
       }
 
@@ -318,8 +295,7 @@ static Aftermath run(NeveVM *vm) {
         break;
 
       case OP_RET: {
-        uint8_t reg = READ_BYTE();
-        Val val = vm->regs[reg];
+        Val val = vm->regs[READ_BYTE()];
 
         printVal(val);
         printf("\n");
