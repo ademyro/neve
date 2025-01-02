@@ -1,8 +1,12 @@
 from typing import BinaryIO, List, Any, Dict
 
 from nevec.ast.visit import Visit
-from nevec.compile.const import *
+
+from nevec.opcode.const import *
+from nevec.opcode.instr import Instr
+
 from nevec.ir.ir import *
+
 from nevec.err.report import Report
 
 class Compile(Visit[Ir, Reg]):
@@ -48,7 +52,7 @@ class Compile(Visit[Ir, Reg]):
 
     def finalize(self):
         last_line = self.debug_header_bytes[-1]
-        self.emit_bytes(Opcode.RET, 0, int.from_bytes(last_line))
+        self.emit(Instr(Opcode.RET, 0), int.from_bytes(last_line))
 
         debug_header_length = self.encode_int(self.debug_header_length, 2)
 
@@ -84,8 +88,8 @@ class Compile(Visit[Ir, Reg]):
 
         return const
 
-    def emit(self, data: bytes):
-        self.opcodes.append(data)
+    def write(self, *data: bytes):
+        self.opcodes += list(data)
 
     def emit_debug(self, data: bytes):
         self.debug_header_bytes.append(data)
@@ -93,21 +97,19 @@ class Compile(Visit[Ir, Reg]):
         self.debug_header_length += len(data)
 
     def emit_int(self, i: int, size: int):
-        self.emit(self.encode_int(i, size))
+        self.write(self.encode_int(i, size))
 
     def emit_str(self, s: str):
-        self.emit(s.encode())
+        self.write(s.encode())
 
-    def emit_byte(
+    def emit(
         self,
-        byte: Opcode | int,
+        instr: Instr,
         line: int,
     ):
         last_line = int.from_bytes(self.debug_header_bytes[-1])
 
-        byte = byte if not isinstance(byte, Opcode) else byte.value - 1
-
-        self.emit_int(byte, 1)
+        self.write(*instr.emit())
 
         if line != last_line:
             self.emit_debug(self.encode_int(self.next_instr_offset, 4))
@@ -115,30 +117,21 @@ class Compile(Visit[Ir, Reg]):
 
         self.next_instr_offset += 1
 
-    def emit_bytes(
-        self,
-        a: int | Opcode,
-        b: int | Opcode,
-        line: int, 
-    ):
-        self.emit_byte(a, line)
-        self.emit_byte(b, line)
-
     def emit_const[T](self, const_type: type, value: T, reg: Reg, line: int):
         const = self.make_const(const_type, value)
 
         const_index = self.const_indices[const.id]
 
         # TODO: implement for Opcode.CONST_LONG
-        self.emit_bytes(Opcode.CONST, reg.emit(), line)
-        self.emit_byte(const_index, line)
+        self.emit(Instr(Opcode.CONST, reg.emit(), const_index), line)
 
     def visit_IUnOp(self, un_op: IUnOp) -> Reg:
         operand = self.visit(un_op.operand)
         output = un_op.reg
 
-        self.emit_bytes(operand.emit(), output.emit(), un_op.loc.line)
-        self.emit_byte(un_op.op.opcode(), un_op.loc.line)
+        opcode = un_op.op.opcode()
+
+        self.emit(Instr(opcode, output.emit(), operand.emit()), un_op.loc.line)
 
         return output 
 
@@ -148,10 +141,16 @@ class Compile(Visit[Ir, Reg]):
 
         output = bin_op.reg
 
-        self.emit_byte(bin_op.op.opcode(), bin_op.loc.line)
-        self.emit_byte(output.emit(), bin_op.loc.line)
-        self.emit_bytes(left.emit(), right.emit(), bin_op.loc.line)
+        instr = Instr(
+            bin_op.op.opcode(),
 
+            output.emit(),
+            left.emit(),
+            right.emit()
+        )
+
+        self.emit(instr, bin_op.loc.line)
+        
         return output
 
     def visit_IInt(self, i: IInt) -> Reg:
@@ -160,15 +159,15 @@ class Compile(Visit[Ir, Reg]):
 
         match i.value:
             case 0:
-                self.emit_bytes(Opcode.ZERO, reg.emit(), line)
+                self.emit(Instr(Opcode.ZERO, reg.emit()), line)
                 return reg
 
             case 1:
-                self.emit_bytes(Opcode.ONE, reg.emit(), line)
+                self.emit(Instr(Opcode.ONE, reg.emit()), line)
                 return reg
 
             case -1:
-                self.emit_bytes(Opcode.MINUS_ONE, reg.emit(), line)
+                self.emit(Instr(Opcode.MINUS_ONE, reg.emit()), line)
                 return reg
 
         self.emit_const(Num, i.value, reg, line)
@@ -180,9 +179,11 @@ class Compile(Visit[Ir, Reg]):
         return f.reg
     
     def visit_IBool(self, b: IBool) -> Reg:
-        self.emit_bytes(
-            Opcode.TRUE if b.value else Opcode.FALSE,
-            b.reg.emit(),
+        self.emit(
+            Instr(
+                Opcode.TRUE if b.value else Opcode.FALSE,
+                b.reg.emit(),
+            ),
             b.loc.line
         )
 
@@ -215,7 +216,7 @@ class Compile(Visit[Ir, Reg]):
         # self.emit_bytes(Opcode.INTERPOL, times, interpol.loc.line)
 
     def visit_INil(self, nil: INil):
-        self.emit_bytes(Opcode.NIL, nil.reg.emit(), nil.loc.line)
+        self.emit(Instr(Opcode.NIL, nil.reg.emit()), nil.loc.line)
 
         return nil.reg
         
