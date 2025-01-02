@@ -12,12 +12,6 @@ from nevec.opcode.const import Const
 
 from nevec.lex.tok import Loc
 
-class Ir:
-    def __init__(self, type: Type, loc: Loc):
-        self.type: Type = type
-        self.loc: Loc = loc
-
-
 class IOp:
     def __init__(self, sym: Sym, loc: Loc):
         self.sym: Sym = sym
@@ -29,13 +23,13 @@ class IRet(IOp):
         return f"ret {self.sym}"
 
 
-class IExpr(Ir):
+class IExpr:
     def __init__(self, type: Type, loc: Loc):
         self.type: Type = type
         self.loc: Loc = loc
 
 
-class TAC(Ir):
+class TAC:
     def __init__(
         self,
         sym: Sym,
