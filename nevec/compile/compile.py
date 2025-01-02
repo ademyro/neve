@@ -1,5 +1,6 @@
 from typing import BinaryIO, List, Any, Dict
 
+from nevec.compile.peephole import Peephole
 from nevec.ast.visit import Visit
 
 from nevec.opcode.const import *
@@ -18,6 +19,8 @@ class Compile(Visit[Ir, Reg]):
         self.const_header_bytes: List[bytes] = []
         self.debug_header_bytes: List[bytes] = []
         self.opcodes: List[bytes] = []
+
+        self.peephole: Peephole = Peephole()
 
         self.next_const_index: int = 0
         self.next_instr_offset: int = 0
@@ -109,7 +112,9 @@ class Compile(Visit[Ir, Reg]):
     ):
         last_line = int.from_bytes(self.debug_header_bytes[-1])
 
-        self.write(*instr.emit())
+        self.peephole.push(instr)
+        if self.peephole.has_flushed:
+            self.write(*self.peephole.flushed)
 
         if line != last_line:
             self.emit_debug(self.encode_int(self.next_instr_offset, 4))
