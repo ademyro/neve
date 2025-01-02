@@ -5,56 +5,75 @@ from enum import auto, Enum
 from nevec.ast.ast import *
 from nevec.ast.type import Type, Types
 
+from nevec.ir.sym import *
+
 from nevec.opcode.opcode import Opcode
+from nevec.opcode.const import Const
 
 from nevec.lex.tok import Loc
-
-from nevec.ir.reg import Reg
 
 class Ir:
     def __init__(self, type: Type, loc: Loc):
         self.type: Type = type
         self.loc: Loc = loc
-    
-    def must_be_expr(self) -> "IExpr":
-        if not isinstance(self, IExpr):
-            raise ValueError("malformed IR")
-        
-        return self
+
+
+class IOp:
+    def __init__(self, sym: Sym, loc: Loc):
+        self.sym: Sym = sym
+        self.loc: Loc = loc
+
+
+class IRet(IOp):
+    def __repr__(self) -> str:
+        return f"ret {self.sym}"
 
 
 class IExpr(Ir):
-    def __init__(self, type: Type, loc: Loc, reg: Reg, dependent: "Dependent"):
+    def __init__(self, type: Type, loc: Loc):
         self.type: Type = type
         self.loc: Loc = loc
-        self.reg: Reg = reg
-        self.dependent: Dependent = dependent
-
-    def freeze_reg(self):
-        self.reg = self.reg.copy()
 
 
-class Dependent:
-    def __init__(self):
-        self.dependencies: List[IExpr] = []
+class TAC(Ir):
+    def __init__(
+        self,
+        sym: Sym,
+        expr: "IExpr | Sym | IOp",
+        loc: Loc,
+        ops: List["TAC"]=[]
+    ):
+        self.sym: Sym = sym
+        self.expr: IExpr | Sym | IOp = expr
+        self.loc: Loc = loc
 
-    def depends_on(self, what: IExpr):
-        if what.reg.state == Reg.State.TEMP:
-            what.reg.state = Reg.State.NECESSARY
+        # we can be 100% sure that this moment is the next moment
+        # thanks to SSA
+        self.moment: Moment = self.sym.first
 
-        self.dependencies.append(what)
+        self.ops: List[TAC] = (
+            ops 
+            if ops != [] or isinstance(self.sym, NamelessSym) 
+            else [self]
+        )
 
-    def loosen_dependencies(self):
-        if self.dependencies == []:
-            return
+    def next_moment(self) -> Moment:
+        return self.moment + 1
+    
+    def __add__(self, other: "TAC") -> "TAC":
+        return TAC(
+            self.sym,
+            self.expr,
+            self.loc,
+            
+            other.ops + self.ops
+        )
 
-        node = self.dependencies.pop()
+    def __repr__(self) -> str:
+        if isinstance(self.expr, IOp | NamelessSym):
+            return str(self.expr)
 
-        # node.dependent.loosen_dependencies()
-        node.reg.state = Reg.State.TEMP
-        node.freeze_reg()
-
-        self.loosen_dependencies()
+        return f"{self.sym.full_name} = {self.expr}" 
 
 
 class IUnOp(IExpr):
@@ -72,36 +91,32 @@ class IUnOp(IExpr):
     def __init__(
         self,
         op: Op,
-        operand: Ir,
+        operand: Sym,
         loc: Loc,
         type: Type,
-        reg: Reg,
-        dependent: Dependent=Dependent()
     ):
         self.op: IUnOp.Op = op
-        self.operand: Ir = operand
+        self.operand: Sym = operand
 
         self.loc: Loc = loc
         self.type: Type = type
-        self.reg: Reg = reg
-        self.dependent: Dependent = dependent
 
     def __repr__(self) -> str:
         match self.op:
             case IUnOp.Op.NEG:
-                return f"-{self.operand}"
+                return f"neg {self.operand}"
 
             case IUnOp.Op.NOT:
                 return f"not {self.operand}"
 
             case IUnOp.Op.IS_NIL:
-                return f"not {self.operand}?"
+                return f"isnil {self.operand}"
 
             case IUnOp.Op.IS_NOT_NIL:
-                return f"{self.operand}?"
+                return f"isnotnil {self.operand}"
             
             case IUnOp.Op.IS_ZERO:
-                return f"{self.operand} == 0"
+                return f"isz {self.operand}"
 
 
 class IBinOp(IExpr):
@@ -132,30 +147,26 @@ class IBinOp(IExpr):
 
     def __init__(
         self,
-        left: Ir,
+        left: Sym,
         op: Op,
-        right: Ir,
+        right: Sym,
         op_lexeme: str,
         loc: Loc,
         type: Type,
-        reg: Reg,
-        dependent: Dependent=Dependent()
     ):
-        self.left: Ir = left
+        self.left: Sym = left
         self.op: IBinOp.Op = op
-        self.right: Ir = right
+        self.right: Sym = right
         self.op_lexeme: str = op_lexeme
 
         self.loc: Loc = loc
         self.type = type
-        self.reg: Reg = reg
-        self.dependent: Dependent = dependent
 
     def __repr__(self) -> str:
         if self.op_lexeme == "":
-            return f"({self.left} {self.right})"
+            return f"{self.left} {self.right}"
 
-        return f"({self.left} {self.op_lexeme} {self.right})"
+        return f"{self.left} {self.op_lexeme} {self.right}"
 
 
 class IInt(IExpr):
@@ -164,19 +175,15 @@ class IInt(IExpr):
         value: int,
         loc: Loc,
         type: Type,
-        reg: Reg,
-        dependent: Dependent=Dependent()
     ):
         self.value: int = value
 
         self.loc: Loc = loc
         self.type: Type = type
-        self.reg: Reg = reg
 
-        self.dependent: Dependent = dependent
 
     def __repr__(self) -> str:
-        return f"{self.value} as {self.type}"
+        return f"{self.value}"
 
 
 class IFloat(IExpr):
@@ -185,19 +192,15 @@ class IFloat(IExpr):
         value: float,
         loc: Loc,
         type: Type,
-        reg: Reg,
-        dependent: Dependent=Dependent()
     ):
         self.value: float = value
 
         self.loc: Loc = loc
         self.type: Type = type
-        self.reg: Reg = reg
 
-        self.dependent: Dependent = dependent
 
     def __repr__(self) -> str:
-        return f"{self.value} as {self.type}"
+        return f"{self.value}"
 
 
 class IBool(IExpr):
@@ -205,16 +208,12 @@ class IBool(IExpr):
         self,
         value: bool,
         loc: Loc,
-        reg: Reg,
-        dependent: Dependent=Dependent()
     ):
         self.value: bool = value
 
         self.loc: Loc = loc
         self.type: Type = Types.BOOL
-        self.reg: Reg = reg
 
-        self.dependent: Dependent = dependent
 
     def __repr__(self) -> str:
         return str(self.value).lower()
@@ -226,66 +225,24 @@ class IStr(IExpr):
         value: str,
         loc: Loc,
         type: Type,
-        reg: Reg,
-        dependent: Dependent=Dependent()
     ):
         self.value: str = value
 
         self.loc: Loc = loc
         self.type: Type = type
-        self.reg: Reg = reg
 
-        self.dependent: Dependent = dependent
 
     def __repr__(self) -> str:
-        return f"\"{self.value}\" as {self.type}"
-
-
-class IInterpol(IExpr):
-    def __init__(
-        self, 
-        left: str, 
-        expr: Ir, 
-        next: Ir, # Self | IStr 
-        loc: Loc,
-        type: Type,
-        reg: Reg,
-        dependent: Dependent=Dependent()
-    ):
-        self.left: str = left
-        self.expr: Ir = expr
-        self.next: Ir = next
-
-        self.loc: Loc = loc
-        self.type: Type = type
-        self.reg: Reg = reg
-
-        self.dependent: Dependent = dependent
-
-    def __repr__(self) -> str:
-        return "".join(
-            [
-                "\"", 
-                self.left, 
-                "#{", 
-                str(self.expr), 
-                "}", 
-                Str.trim_quotes(str(self.next)) 
-            ]
-        )
+        return f"\"{self.value}\""
 
 
 class INil(IExpr):
     def __init__(
         self,
         loc: Loc,
-        reg: Reg,
-        dependent: Dependent=Dependent()
     ):
         self.loc: Loc = loc
         self.type: Type = Types.NIL
-        self.reg: Reg = reg
-        self.dependent: Dependent = dependent
 
     def __repr__(self) -> str:
         return "nil"

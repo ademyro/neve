@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from enum import auto, Enum
 
@@ -30,16 +30,23 @@ class Reg:
 
 class RegManager:
     def __init__(self):
-        self.regs: List[Reg] = []
+        self.regs: Dict[str, Reg] = {}
+        self.available: List[Reg] = []
+    
+    def assign(self, name: str):
+        self.regs[name] = self.next()
+
+    def get(self, name: str):
+        return self.regs[name]
 
     def next(self, regs: Optional[List[Reg]]=None) -> Reg:
-        regs = regs if regs is not None else self.regs 
+        regs = regs if regs is not None else self.available 
 
         if regs == []:
             index = len(self.regs)
             new_reg = Reg(index, Reg.State.TEMP)
 
-            self.regs.append(new_reg)
+            self.available.append(new_reg)
 
             return new_reg
 

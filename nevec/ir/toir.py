@@ -1,165 +1,223 @@
+from typing import Tuple
+
 from nevec.ast.ast import *
 from nevec.ast.visit import Visit
 
 from nevec.ir.ir import *
 from nevec.ir.reg import *
 
-class ToIr(Visit[Ast, Ir]):
+class ToIr(Visit[Ast, TAC]):
+    DIGITS = "1234567890"
+
     def __init__(self):
         self.reg_manager: RegManager = RegManager()
+        self.syms: Dict[str, Sym] = {}
 
-    def visit_Program(self, program: Program) -> Ir:
-        expr = self.visit(program.expr).must_be_expr()
+        self.last_moment: Moment = 0
 
-        expr.dependent.loosen_dependencies()
+    def new_sym(self, moment: Moment, name: str="t") -> Sym:
+        name, index = self.next_available_name(name)
 
-        return expr
+        sym = Sym(name, index, moment)
 
-    def visit_Parens(self, parens: Parens) -> Ir: 
-        return self.visit(parens.expr)
+        self.syms[sym.full_name] = sym
 
-    def visit_UnOp(self, un_op: UnOp) -> IUnOp:
-        expr = self.visit(un_op.expr).must_be_expr()
+        return sym
 
-        return IUnOp(
-            IUnOp.Op(un_op.op.value),
-            expr,
-            un_op.loc,
-            un_op.type,
-            self.reg_manager.next(),
+    def next_available_name(self, name: str, index: int=0) -> Tuple[str, int]:
+        full_name = name + str(index)
+
+        if full_name not in self.syms.keys():
+            return name, index
+
+        return self.next_available_name(name, index + 1)
+
+    def visit_Program(self, program: Program) -> TAC:
+        expr = self.visit(program.expr)
+
+        ret = IRet(
+            expr.sym,
+            expr.loc
         )
 
-    def visit_Bitwise(self, bitwise: Bitwise) -> IBinOp:
-        dependent = Dependent()
+        tac = TAC(
+            ret.sym,
+            ret,
+            expr.loc
+        )
 
-        left = self.visit(bitwise.left).must_be_expr()
-        dependent.depends_on(left)
+        return tac + expr
 
-        right = self.visit(bitwise.right).must_be_expr()
-        dependent.depends_on(right)
+    def visit_Parens(self, parens: Parens) -> TAC: 
+        return self.visit(parens.expr)
+
+    def visit_UnOp(self, un_op: UnOp) -> TAC:
+        operand = self.visit(un_op.expr)
+        
+        expr = IUnOp(
+            IUnOp.Op(un_op.op.value),
+            operand.sym,
+
+            un_op.loc,
+            un_op.type
+        )
+
+        tac = TAC(
+            self.new_sym(operand.next_moment()),
+            expr,
+            expr.loc
+        )
+
+        return tac + operand
+
+    def visit_Bitwise(self, bitwise: Bitwise) -> TAC:
+        left = self.visit(bitwise.left)
+        right = self.visit(bitwise.right)
 
         op_lexeme = bitwise.tok.lexeme
 
-        dependent.loosen_dependencies()
-
-        return IBinOp(
-            left,
+        expr = IBinOp(
+            left.sym,
             IBinOp.Op(bitwise.op.value),
-            right,
+            right.sym,
             op_lexeme,
 
             bitwise.loc,
             bitwise.type,
-            self.reg_manager.next(),
-
-            dependent
         )
 
-    def visit_Comparison(self, comparison: Comparison) -> IBinOp:
-        dependent = Dependent()
+        moment = right.next_moment()
 
-        left = self.visit(comparison.left).must_be_expr()
-        dependent.depends_on(left)
+        tac = TAC(
+            self.new_sym(moment),
+            expr,
+            expr.loc
+        )
 
-        right = self.visit(comparison.right).must_be_expr()
-        dependent.depends_on(right)
+        return tac + left + right
+
+    def visit_Comparison(self, comparison: Comparison) -> TAC:
+        left = self.visit(comparison.left)
+        right = self.visit(comparison.right)
 
         op_lexeme = comparison.tok.lexeme
 
-        dependent.loosen_dependencies()
-
-        return IBinOp(
-            left,
+        expr = IBinOp(
+            left.sym,
             IBinOp.Op(comparison.op.value),
-            right,
+            right.sym,
             op_lexeme,
 
             comparison.loc,
             comparison.type,
-            self.reg_manager.next(),
-
-            dependent
         )
 
-    def visit_Arith(self, arith: Arith) -> IBinOp:
-        dependent = Dependent()
+        moment = right.next_moment()
 
-        left = self.visit(arith.left).must_be_expr()
-        dependent.depends_on(left)
+        return TAC(
+            self.new_sym(moment),
+            expr,
+            expr.loc
+        ) + right + left
 
-        right = self.visit(arith.right).must_be_expr()
-        dependent.depends_on(right)
+    def visit_Arith(self, arith: Arith) -> TAC:
+        left = self.visit(arith.left)
+        right = self.visit(arith.right)
 
         op_lexeme = arith.tok.lexeme
 
-        dependent.loosen_dependencies()
-
-        return IBinOp(
-            left,
+        expr = IBinOp(
+            left.sym,
             IBinOp.Op(arith.op.value),
-            right,
+            right.sym,
             op_lexeme,
 
             arith.loc,
             arith.type,
-            self.reg_manager.next(),
-
-            dependent
         )
 
-    def visit_Int(self, i: Int) -> IInt:
-        return IInt(
+        moment = right.next_moment()
+
+        return TAC(
+            self.new_sym(moment),
+            expr,
+            expr.loc
+        ) + right + left
+
+    def visit_Int(self, i: Int) -> TAC:
+        expr = IInt(
             i.value,
             i.loc,
             i.type,
-            self.reg_manager.next()
         )
 
-    def visit_Float(self, f: Float) -> IFloat:
-        return IFloat(
+        self.last_moment += 1
+
+        sym = NamelessSym(expr, self.last_moment - 1)
+        return TAC(
+            sym,
+            sym,
+            expr.loc
+        )
+
+    def visit_Float(self, f: Float) -> TAC:
+        expr = IFloat(
             f.value,
             f.loc,
             f.type,
-            self.reg_manager.next()
         )
 
-    def visit_Bool(self, b: Bool) -> IBool:
-        return IBool(
+        self.last_moment += 1
+
+        sym = NamelessSym(expr, self.last_moment - 1)
+        return TAC(
+            sym,
+            sym,
+            expr.loc
+        )
+
+    def visit_Bool(self, b: Bool) -> TAC:
+        expr = IFloat(
             b.value,
             b.loc,
-            self.reg_manager.next()
+            b.type,
         )
 
-    def visit_Str(self, s: Str) -> IStr:
-        return IStr(
+        self.last_moment += 1
+
+        sym = NamelessSym(expr, self.last_moment - 1)
+        return TAC(
+            sym,
+            sym,
+            expr.loc
+        )
+
+    def visit_Str(self, s: Str) -> TAC:
+        expr = IStr(
             s.value,
             s.loc,
             s.type,
-            self.reg_manager.next()
         )
 
-    def visit_Interpol(self, interpol: Interpol) -> IInterpol:
-        dependent = Dependent()
+        self.last_moment += 1
 
-        expr = self.visit(interpol.expr).must_be_expr()
-        dependent.depends_on(expr)
-
-        next = self.visit(interpol.next).must_be_expr()
-        dependent.depends_on(next)
-
-        dependent.loosen_dependencies()
-
-        return IInterpol(
-            interpol.left,
-            expr,
-            next,
-            interpol.loc,
-            interpol.type,
-            self.reg_manager.next()
+        sym = NamelessSym(expr, self.last_moment - 1)
+        return TAC(
+            sym,
+            sym,
+            expr.loc
         )
 
-    def visit_Nil(self, nil: Nil) -> INil:
-        return INil(
-            nil.loc,
-            self.reg_manager.next()
+    def visit_Nil(self, nil: Nil) -> TAC:
+        expr = INil(
+            nil.loc
+        )
+
+        self.last_moment += 1
+
+        sym = NamelessSym(expr, self.last_moment - 1)
+        return TAC(
+            sym,
+            sym,
+            expr.loc
         )

@@ -29,14 +29,14 @@ if __name__ == "__main__":
         ir = ToIr().visit(ast)
 
         print(ast)
-        print(ir)
+        print("\n".join(map(str, ir.ops)))
 
-    output_file = filename.removesuffix(".neve") + ".geada"
+    # output_file = filename.removesuffix(".neve") + ".geada"
 
-    with open(output_file, "wb") as f:
-        compile = Compile()
-        compile.visit(ir)
-
-        bytecode = compile.output(to=f)
+    # with open(output_file, "wb") as f:
+    #     compile = Compile()
+    #     compile.visit(ir)
+    # 
+    #     bytecode = compile.output(to=f)
 
 

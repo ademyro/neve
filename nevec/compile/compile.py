@@ -7,6 +7,7 @@ from nevec.opcode.const import *
 from nevec.opcode.instr import Instr
 
 from nevec.ir.ir import *
+from nevec.ir.reg import *
 
 from nevec.err.report import Report
 
@@ -198,27 +199,6 @@ class Compile(Visit[Ir, Reg]):
         self.emit_const(StrLit, s.value, s.reg, s.loc.line)
 
         return s.reg
-
-    def visit_IInterpol(self, interpol: IInterpol) -> Reg:
-        _ = interpol
-
-        raise NotImplementedError()
-        # def emit(next: Ir) -> int:
-        #     if not isinstance(next, IInterpol):
-        #         if not isinstance(next, IStr):
-        #             return -1
-        # 
-        #         self.emit_const(StrLit, next.value, next.loc.line)
-        #         return 0
-        # 
-        #     self.emit_const(StrLit, next.left, next.loc.line)
-        #     self.visit(next.expr)
-        #     
-        #     return 1 + emit(next.next)
-        # 
-        # times = emit(interpol) 
-        # 
-        # self.emit_bytes(Opcode.INTERPOL, times, interpol.loc.line)
 
     def visit_INil(self, nil: INil):
         self.emit(Instr(Opcode.NIL, nil.reg.emit()), nil.loc.line)
