@@ -5,7 +5,7 @@ from enum import auto, Enum
 from nevec.ast.ast import *
 from nevec.ast.type import Type, Types
 
-from nevec.compile.opcode import Opcode
+from nevec.opcode.opcode import Opcode
 
 from nevec.lex.tok import Loc
 
