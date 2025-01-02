@@ -33,7 +33,7 @@ class TAC:
     def __init__(
         self,
         sym: Sym,
-        expr: "IExpr | Sym | IOp",
+        expr: IExpr | Sym | IOp,
         loc: Loc,
         ops: List["TAC"]=[]
     ):
