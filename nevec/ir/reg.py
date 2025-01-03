@@ -95,5 +95,5 @@ class InterferenceGraph:
 
         self.regs = {v.name: v for v in vertices}
 
-    def get_reg(self, name: str) -> int:
-        return self.regs[name].reg
+    def get_reg(self, sym: Sym) -> int:
+        return self.regs[sym.full_name].reg

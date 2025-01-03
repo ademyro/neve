@@ -11,6 +11,10 @@ from nevec.opcode.opcode import Opcode
 
 from nevec.lex.tok import Loc
 
+
+type Ir = IExpr | IOp | TAC
+
+
 class IOp:
     def __init__(self, sym: Sym, loc: Loc):
         self.sym: Sym = sym

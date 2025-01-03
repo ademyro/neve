@@ -5,18 +5,21 @@ from nevec.ast.visit import Visit
 
 from nevec.opcode.const import *
 from nevec.opcode.instr import Instr
+from nevec.opcode.emit import Emit
 
 from nevec.ir.ir import *
 from nevec.ir.reg import *
 
 from nevec.err.report import Report
 
-class Compile(Visit[TAC, None]):
+class Compile(Visit[Ir, None]):
     NEVE_MAGIC_NUMBER = 0xbadbed00
     NEVE_HEADER_SEPARATOR = 0x1c
     NEVE_EOF_PADDING_BYTE = 0xff
 
-    def __init__(self):
+    def __init__(self, graph: InterferenceGraph):
+        self.graph: InterferenceGraph = graph
+
         self.const_header_bytes: List[bytes] = []
         self.debug_header_bytes: List[bytes] = []
         self.opcodes: List[bytes] = []
@@ -36,9 +39,9 @@ class Compile(Visit[TAC, None]):
     def output(self, to: BinaryIO):
         self.finalize()
 
-        magic_number = self.encode_int(Compile.NEVE_MAGIC_NUMBER, 4)
-        header_separator = self.encode_int(Compile.NEVE_HEADER_SEPARATOR, 1)
-        eof_padding = [self.encode_int(Compile.NEVE_EOF_PADDING_BYTE, 1)] * 16
+        magic_number = Emit.encode_int(Compile.NEVE_MAGIC_NUMBER, 4)
+        header_separator = Emit.encode_int(Compile.NEVE_HEADER_SEPARATOR, 1)
+        eof_padding = [Emit.encode_int(Compile.NEVE_EOF_PADDING_BYTE, 1)] * 16
 
         byte_list = [
             magic_number,
@@ -56,9 +59,8 @@ class Compile(Visit[TAC, None]):
 
     def finalize(self):
         last_line = self.debug_header_bytes[-1]
-        self.emit(Instr(Opcode.RET, 0), int.from_bytes(last_line))
 
-        debug_header_length = self.encode_int(self.debug_header_length, 2)
+        debug_header_length = Emit.encode_int(self.debug_header_length, 2)
 
         self.debug_header_bytes = [
             debug_header_length,
@@ -68,11 +70,11 @@ class Compile(Visit[TAC, None]):
     def emit_first_bytes(self):
         source_file_path = Report.abs_file_path
 
-        self.emit_debug(self.encode_int(len(source_file_path), 2))
+        self.emit_debug(Emit.encode_int(len(source_file_path), 2))
         self.emit_debug(source_file_path.encode())
 
-    def encode_int(self, data: int, size: int) -> bytes:
-        return data.to_bytes(size, byteorder="little")
+    def reg_of(self, sym: Sym) -> int:
+        return self.graph.get_reg(sym)
 
     def make_const[T](self, const_type: type[Const], value: T) -> Const:
         if value in self.const_ids:
@@ -101,10 +103,7 @@ class Compile(Visit[TAC, None]):
         self.debug_header_length += len(data)
 
     def emit_int(self, i: int, size: int):
-        self.write(self.encode_int(i, size))
-
-    def emit_str(self, s: str):
-        self.write(s.encode())
+        self.write(Emit.encode_int(i, size))
 
     def emit(
         self,
@@ -118,8 +117,8 @@ class Compile(Visit[TAC, None]):
             self.write(*self.peephole.flushed)
 
         if line != last_line:
-            self.emit_debug(self.encode_int(self.next_instr_offset, 4))
-            self.emit_debug(self.encode_int(line, 4))
+            self.emit_debug(Emit.encode_int(self.next_instr_offset, 4))
+            self.emit_debug(Emit.encode_int(line, 4))
 
         self.next_instr_offset += 1
 
@@ -129,90 +128,80 @@ class Compile(Visit[TAC, None]):
         const_index = self.const_indices[const.id]
 
         # TODO: implement for Opcode.CONST_LONG
-        self.emit(Instr(Opcode.CONST, reg.emit(), const_index), line)
+        self.emit(Instr(Opcode.CONST, reg, const_index), line)
     
-    def compile(self, ir: TAC):
-        if ir.ops == []:
+    def compile(self, ir: List[TAC]):
+        if ir == []:
             return 
 
-        head = ir.ops[0]
+        head = ir[0]
 
         self.visit(head) 
 
+        self.compile(ir[1:])
+
     def visit_TAC(self, tac: TAC):
-        self.visit(tac.expr)
+        sym  = tac.sym
+        dest_reg = self.graph.get_reg(sym)
 
-    def visit_IUnOp(self, un_op: IUnOp) -> int:
-        operand = self.visit(un_op.operand)
-        output = un_op.reg
+        self.visit(tac.expr, dest_reg)
 
+    def visit_IRet(self, ret: IRet, dest_reg: int):
+        self.emit(Instr(Opcode.RET, dest_reg), ret.loc.line)
+
+    def visit_IUnOp(self, un_op: IUnOp, dest_reg: int):
+        operand = self.reg_of(un_op.operand)
         opcode = un_op.op.opcode()
 
-        self.emit(Instr(opcode, output.emit(), operand.emit()), un_op.loc.line)
+        self.emit(Instr(opcode, dest_reg, operand), un_op.loc.line)
 
-        return output 
-
-    def visit_IBinOp(self, bin_op: IBinOp) -> int:
-        left = self.visit(bin_op.left)
-        right = self.visit(bin_op.right)
-
-        output = bin_op.reg
+    def visit_IBinOp(self, bin_op: IBinOp, dest_reg: int):
+        left = self.reg_of(bin_op.left)
+        right = self.reg_of(bin_op.right)
 
         instr = Instr(
             bin_op.op.opcode(),
 
-            output.emit(),
-            left.emit(),
-            right.emit()
+            dest_reg,
+            left,
+            right
         )
 
         self.emit(instr, bin_op.loc.line)
-        
-        return output
 
-    def visit_IInt(self, i: IInt) -> int:
-        reg = i.reg
+    def visit_IInt(self, i: IInt, dest_reg: int):
         line = i.loc.line
 
         match i.value:
             case 0:
-                self.emit(Instr(Opcode.ZERO, reg.emit()), line)
-                return reg
+                self.emit(Instr(Opcode.ZERO, dest_reg), line)
+                return
 
             case 1:
-                self.emit(Instr(Opcode.ONE, reg.emit()), line)
-                return reg
+                self.emit(Instr(Opcode.ONE, dest_reg), line)
+                return
 
             case -1:
-                self.emit(Instr(Opcode.MINUS_ONE, reg.emit()), line)
-                return reg
+                self.emit(Instr(Opcode.MINUS_ONE, dest_reg), line)
+                return
 
-        self.emit_const(Num, i.value, reg, line)
-        return reg
+        self.emit_const(Num, i.value, dest_reg, line)
 
-    def visit_IFloat(self, f: IFloat) -> int:
-        self.emit_const(Num, f.value, f.reg, f.loc.line)
-
-        return f.reg
+    def visit_IFloat(self, f: IFloat, dest_reg: int):
+        self.emit_const(Num, f.value, dest_reg, f.loc.line)
     
-    def visit_IBool(self, b: IBool) -> int:
+    def visit_IBool(self, b: IBool, dest_reg: int):
         self.emit(
             Instr(
                 Opcode.TRUE if b.value else Opcode.FALSE,
-                b.reg.emit(),
+                dest_reg
             ),
             b.loc.line
         )
 
-        return b.reg
-       
-    def visit_IStr(self, s: IStr):
-        self.emit_const(StrLit, s.value, s.reg, s.loc.line)
+    def visit_IStr(self, s: IStr, dest_reg: int):
+        self.emit_const(StrLit, s.value, dest_reg, s.loc.line)
 
-        return s.reg
-
-    def visit_INil(self, nil: INil):
-        self.emit(Instr(Opcode.NIL, nil.reg.emit()), nil.loc.line)
-
-        return nil.reg
+    def visit_INil(self, nil: INil, dest_reg: int):
+        self.emit(Instr(Opcode.NIL, dest_reg), nil.loc.line)
         

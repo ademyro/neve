@@ -37,12 +37,12 @@ if __name__ == "__main__":
         print(ast)
         print("\n".join(map(str, ir)))
 
-    # output_file = filename.removesuffix(".neve") + ".geada"
+    output_file = filename.removesuffix(".neve") + ".geada"
 
-    # with open(output_file, "wb") as f:
-    #     compile = Compile()
-    #     compile.visit(ir)
-    # 
-    #     bytecode = compile.output(to=f)
+    with open(output_file, "wb") as f:
+        compile = Compile(graph)
+        compile.compile(ir)
+    
+        bytecode = compile.output(to=f)
 
 
