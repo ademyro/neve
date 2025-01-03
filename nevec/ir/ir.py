@@ -8,7 +8,6 @@ from nevec.ast.type import Type, Types
 from nevec.ir.sym import *
 
 from nevec.opcode.opcode import Opcode
-from nevec.opcode.const import Const
 
 from nevec.lex.tok import Loc
 
@@ -33,36 +32,20 @@ class TAC:
     def __init__(
         self,
         sym: Sym,
-        expr: IExpr | Sym | IOp,
+        expr: IExpr | IOp,
         loc: Loc,
-        ops: List["TAC"]=[]
     ):
         self.sym: Sym = sym
-        self.expr: IExpr | Sym | IOp = expr
+        self.expr: IExpr | IOp = expr
         self.loc: Loc = loc
 
         # we can be 100% sure that this moment is the next moment
         # thanks to SSA
         self.moment: Moment = self.sym.first
 
-        self.ops: List[TAC] = (
-            ops 
-            if ops != [] or isinstance(self.sym, NamelessSym) 
-            else [self]
-        )
-
     def next_moment(self) -> Moment:
         return self.moment + 1
     
-    def __add__(self, other: "TAC") -> "TAC":
-        return TAC(
-            self.sym,
-            self.expr,
-            self.loc,
-            
-            other.ops + self.ops
-        )
-
     def __repr__(self) -> str:
         if isinstance(self.expr, IOp | NamelessSym):
             return str(self.expr)

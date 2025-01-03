@@ -11,7 +11,7 @@ from nevec.ir.reg import *
 
 from nevec.err.report import Report
 
-class Compile(Visit[Ir, Reg]):
+class Compile(Visit[TAC, None]):
     NEVE_MAGIC_NUMBER = 0xbadbed00
     NEVE_HEADER_SEPARATOR = 0x1c
     NEVE_EOF_PADDING_BYTE = 0xff
@@ -123,15 +123,26 @@ class Compile(Visit[Ir, Reg]):
 
         self.next_instr_offset += 1
 
-    def emit_const[T](self, const_type: type, value: T, reg: Reg, line: int):
+    def emit_const[T](self, const_type: type, value: T, reg: int, line: int):
         const = self.make_const(const_type, value)
 
         const_index = self.const_indices[const.id]
 
         # TODO: implement for Opcode.CONST_LONG
         self.emit(Instr(Opcode.CONST, reg.emit(), const_index), line)
+    
+    def compile(self, ir: TAC):
+        if ir.ops == []:
+            return 
 
-    def visit_IUnOp(self, un_op: IUnOp) -> Reg:
+        head = ir.ops[0]
+
+        self.visit(head) 
+
+    def visit_TAC(self, tac: TAC):
+        self.visit(tac.expr)
+
+    def visit_IUnOp(self, un_op: IUnOp) -> int:
         operand = self.visit(un_op.operand)
         output = un_op.reg
 
@@ -141,7 +152,7 @@ class Compile(Visit[Ir, Reg]):
 
         return output 
 
-    def visit_IBinOp(self, bin_op: IBinOp) -> Reg:
+    def visit_IBinOp(self, bin_op: IBinOp) -> int:
         left = self.visit(bin_op.left)
         right = self.visit(bin_op.right)
 
@@ -159,7 +170,7 @@ class Compile(Visit[Ir, Reg]):
         
         return output
 
-    def visit_IInt(self, i: IInt) -> Reg:
+    def visit_IInt(self, i: IInt) -> int:
         reg = i.reg
         line = i.loc.line
 
@@ -179,12 +190,12 @@ class Compile(Visit[Ir, Reg]):
         self.emit_const(Num, i.value, reg, line)
         return reg
 
-    def visit_IFloat(self, f: IFloat) -> Reg:
+    def visit_IFloat(self, f: IFloat) -> int:
         self.emit_const(Num, f.value, f.reg, f.loc.line)
 
         return f.reg
     
-    def visit_IBool(self, b: IBool) -> Reg:
+    def visit_IBool(self, b: IBool) -> int:
         self.emit(
             Instr(
                 Opcode.TRUE if b.value else Opcode.FALSE,

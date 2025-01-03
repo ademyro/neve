@@ -3,6 +3,7 @@ import sys
 from nevec.check.check import Check
 from nevec.parse.parse import Parse
 from nevec.ir.toir import ToIr
+from nevec.ir.reg import InterferenceGraph
 from nevec.compile.compile import Compile
 
 if __name__ == "__main__":
@@ -26,10 +27,15 @@ if __name__ == "__main__":
         if had_err:
             exit(1)
 
-        ir = ToIr().visit(ast)
+        toir = ToIr()
+
+        ir = toir.build_ir(ast)
+        syms = list(toir.syms.values())
+
+        graph = InterferenceGraph(syms)
 
         print(ast)
-        print("\n".join(map(str, ir.ops)))
+        print("\n".join(map(str, ir)))
 
     # output_file = filename.removesuffix(".neve") + ".geada"
 

@@ -1,61 +1,99 @@
-from typing import Dict, List, Optional
+from typing import Dict, Self, List, Optional, Tuple
 
 from enum import auto, Enum
 
-class Reg:
-    class State(Enum):
-        TEMP = auto()
-        NECESSARY = auto()
-        ALLOCATED = auto()
+from nevec.ir.sym import Sym
 
-    
-    def __init__(self, index: int, state: State):
-        self.index: int = index
-        self.state: Reg.State = state
+class Vertex:
+    def __init__(self, name: str, value: int):
+        self.name: str = name
+        self.value: int = value
+        
+        self.reg: int = -1
 
-    def allocate(self):
-        self.state = Reg.State.ALLOCATED
+        self.adjacent: List[Vertex] = []
+        self.unavailable_regs: List[int] = []
 
-    def copy(self) -> "Reg":
-        return Reg(self.index, self.state)
+    def next_reg(self, reg=0):
+        if self.unavailable_regs == []:
+            self.unavailable_regs = [v.reg for v in self.adjacent]
 
-    def freeze(self):
-        self = self.copy()
+        if reg not in self.unavailable_regs:
+            self.reg = reg
+            return
 
-    def emit(self) -> int:
-        return self.index
+        self.next_reg(reg + 1)
+
+    def connect(self, to: Self):
+        self.adjacent.append(to)
+        to.adjacent.append(self)
+
+    def assign(self, reg: int):
+        self.reg = reg
 
     def __repr__(self) -> str:
-        return f"r{self.index}"
+        return f"{self.name} r{self.reg}"
 
-class RegManager:
-    def __init__(self):
-        self.regs: Dict[str, Reg] = {}
-        self.available: List[Reg] = []
-    
-    def assign(self, name: str):
-        self.regs[name] = self.next()
+class InterferenceGraph:
+    def __init__(self, syms: List[Sym]):
+        self.regs: Dict[str, Vertex] = {}
 
-    def get(self, name: str):
-        return self.regs[name]
+        assert list(filter(lambda s: s.lifetime is None, syms)) == []
 
-    def next(self, regs: Optional[List[Reg]]=None) -> Reg:
-        regs = regs if regs is not None else self.available 
+        self.draw_edges(based_on=syms)
+        self.assign_registers()
 
-        if regs == []:
-            index = len(self.regs)
-            new_reg = Reg(index, Reg.State.TEMP)
+    def draw_edges(self, based_on: List[Sym]):
+        def check(syms: List[Tuple[int, Sym]]):
+            def each(
+                sym: Tuple[int, Sym],
+                other_syms: List[Tuple[int, Sym]]
+            ):
+                if other_syms == []:
+                    return
 
-            self.available.append(new_reg)
+                other = other_syms[0]
 
-            return new_reg
+                sym_itself = sym[1]
+                other_sym = other[1]
+                
+                other_lifetime = other_sym.lifetime
+                sym_lifetime = sym_itself.lifetime 
 
-        head = regs[0] 
-        
-        if head.state == Reg.State.TEMP:
-            return head
+                # this is silly too
+                assert sym_lifetime is not None and other_lifetime is not None
 
-        return self.next(regs[1:])
+                if sym_lifetime.intersects_with(other_lifetime):
+                    other_vertex = self.regs[other_sym.full_name]
+                    vertex = self.regs[sym_itself.full_name]
 
-    def next_index(self) -> int:
-        return len(self.regs)
+                    vertex.connect(to=other_vertex)
+
+                each(sym, other_syms[1:])
+
+            if syms == []:
+                return
+
+            head = syms[0]
+
+            each(head, syms[1:])
+            check(syms[1:])
+
+        self.regs = {
+            s.full_name: Vertex(s.full_name, i)
+            for i, s in enumerate(based_on)
+        }
+
+        check(list(enumerate(based_on)))
+
+    def assign_registers(self):
+        vertices = list(self.regs.values())
+
+        # using list() because silly Python doesn't immediately interpretet
+        # map() expressions
+        list(map(Vertex.next_reg, vertices))
+
+        self.regs = {v.name: v for v in vertices}
+
+    def get_reg(self, name: str) -> int:
+        return self.regs[name].reg

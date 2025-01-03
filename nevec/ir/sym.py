@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Self
 
 type Moment = int
 
@@ -6,11 +6,22 @@ class Lifetime:
     def __init__(self, first: Moment, last: Optional[Moment]=None):
         self.first: Moment = first
         self.last: Optional[Moment] = last
+
+    def intersects_with(self, other: Self) -> bool:
+        assert self.last is not None and other.last is not None
+
+        return (
+            (self.first >= other.first and self.last <= other.last) or
+            (other.first >= self.first and other.last <= self.last)
+        )
     
     def is_valid_in(self, moment: Moment) -> bool:
         assert self.last is not None
 
         return self.first >= moment and self.last <= moment
+
+    def __repr__(self) -> str:
+        return f"({self.first}, {self.last})"
 
 
 class Sym:
