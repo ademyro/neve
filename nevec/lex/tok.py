@@ -14,6 +14,34 @@ class Loc:
     def new():
         return Loc(0, 1, 0)
 
+    @staticmethod
+    def in_between(a: "Loc", b: "Loc") -> "Loc":
+        col = (
+            (a.col + b.col) // 2
+            if a.line == b.line
+            else a.col + 1
+        )
+
+        length = (
+            b.col - a.col 
+            if a.line == b.line 
+            else 1
+        )
+
+        return Loc(
+            col,
+            a.line,
+            length
+        )
+
+    @staticmethod
+    def right_after(other: "Loc") -> "Loc":
+        return Loc(
+            other.col + other.length,
+            other.line,
+            1
+        )
+
     def copy(self):
         return Loc(self.col, self.line, self.length)
     
@@ -110,11 +138,12 @@ class TokType(Enum):
     VAR = auto()
     WHILE = auto()
 
-    LPAREN = auto()
     RPAREN = auto()
-    LBRACKET = auto()
     RBRACKET = auto()
     PIPE = auto()
+
+    LPAREN = auto()
+    LBRACKET = auto()
 
     ID = auto()
     STR = auto()
@@ -129,6 +158,8 @@ class TokType(Enum):
     TRUE = auto()
     WITH = auto()
 
+    INTERPOL_SEP = auto()
+
     NEWLINE = auto()
     ERR = auto()
     EOF = auto()
@@ -140,6 +171,13 @@ class TokType(Enum):
     @staticmethod
     def match_keyword(id: str) -> Optional["TokType"]:
         return TokTypes.KEYWORDS.get(id)
+
+    @staticmethod
+    def is_expr_starter(type: "TokType") -> bool:
+        return (
+            type.value >= TokType.LPAREN.value and 
+            type.value <= TokType.WITH.value
+        )
 
 class TokTypes:
     KEYWORDS = {

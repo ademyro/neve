@@ -26,6 +26,9 @@ class CharQueue:
 
         return self.chars[-1]
 
+    def __repr__(self) -> str:
+        return "".join(self.chars)
+
 class Lex:
     MAX_INTERPOL_DEPTH = 255
     DIGITS = "1234567890"
@@ -39,6 +42,8 @@ class Lex:
         self.lexeme: List[str] = []
 
         self.interpol_depth: int = 0
+        self.in_interpol: bool = False
+
         self.lines: List[str] = code.split("\n")
 
         Report.setup(file_name, self.lines)
@@ -84,6 +89,9 @@ class Lex:
         if self.char is None:
             self.sync()
             return self.new_tok(TokType.EOF)
+
+        if self.in_interpol:
+            return self.string(capture_first_char=False)
         
         if self.on_digit() or self.on_float():
             return self.number()
@@ -101,10 +109,12 @@ class Lex:
             
             self.interpol_depth -= 1
 
+            self.in_interpol = True
+
             self.advance()
             self.sync()
 
-            return self.string(capture_first_char=False)
+            return self.new_tok(TokType.INTERPOL_SEP)
 
         if self.char == '\n':
             self.advance()
@@ -217,6 +227,9 @@ class Lex:
             
             if self.char == "\n":
                 self.loc.newline()
+
+        if self.in_interpol:
+            self.in_interpol = False
             
         if self.is_at_end():
             return self.err("unterminated string")
@@ -245,16 +258,16 @@ class Lex:
 
         return interpol_tok 
 
-    def on_ws(self):
+    def on_ws(self) -> bool:
         return self.char in Lex.WS or self.char == "#"
     
-    def on_digit(self):
+    def on_digit(self) -> bool:
         return self.is_digit(self.char)
     
-    def on_float(self):
+    def on_float(self) -> bool:
         return self.char == "." and self.is_digit(self.peek())
 
-    def on_alpha(self):
+    def on_alpha(self) -> bool:
         return (
             self.char is not None and 
             (
@@ -263,5 +276,5 @@ class Lex:
             )
         )
 
-    def is_digit(self, char: str):
+    def is_digit(self, char: str) -> bool:
         return char is not None and char in Lex.DIGITS

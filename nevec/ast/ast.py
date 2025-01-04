@@ -44,7 +44,11 @@ class Parens(Expr):
         return f"({self.expr})"
 
 
-class UnOp(Expr):
+class Op(Expr):
+    ...
+
+
+class UnOp(Op):
     class Op(Enum):
         NEG = auto()
         NOT = auto()
@@ -69,7 +73,7 @@ class UnOp(Expr):
         return f"{op}{self.expr}"
 
 
-class BinOp(Expr):
+class BinOp(Op):
     class Op(Enum):
         PLUS = auto()
         MINUS = auto()  
@@ -88,6 +92,9 @@ class BinOp(Expr):
         GTE = auto()
         LT = auto()
         LTE = auto()
+
+        CONCAT = auto()
+
 
     def __init__(
         self, 
@@ -149,6 +156,18 @@ class Arith(BinOp):
 
         return self.left.type.unless_unknown(self.left.type, self.right.type)
 
+
+class Concat(BinOp):
+    def infer_type(self, base_type=None):
+        _ = base_type
+
+        if self.left.type != self.right.type:
+            return Types.UNKNOWN
+
+        if not self.left.type.is_str():
+            return Types.UNKNOWN
+
+        return self.left.type.unless_unknown(self.left.type, self.right.type)
 
 class Int(Expr):
     def __init__(self, value: int, loc: Loc):

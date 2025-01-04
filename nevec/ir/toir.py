@@ -171,6 +171,35 @@ class ToIr(Visit[Ast, Tac]):
         self.ops.append(tac)
         return tac
 
+    def visit_Concat(self, concat: Concat) -> Tac:
+        left = self.visit(concat.left)
+        right = self.visit(concat.right)
+
+        expr = IBinOp(
+            left,
+            IBinOp.Op(concat.op.value),
+            right,
+
+            "concat",
+
+            concat.loc,
+            concat.type,
+        )
+
+        moment = self.next_moment()
+
+        left.sym.last_used(moment)
+        right.sym.last_used(moment)
+
+        tac = Tac(
+            self.new_sym(moment),
+            expr,
+            expr.loc
+        )
+
+        self.ops.append(tac)
+        return tac
+
     def visit_Int(self, i: Int) -> Tac:
         expr = IInt(
             i.value,

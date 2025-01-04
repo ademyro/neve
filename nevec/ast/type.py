@@ -27,7 +27,7 @@ class Type:
 
     def is_str(self) -> bool:
         return (
-            self == TypeKind.STR or
+            self == Types.STR or
             self == Types.STR16 or
             self == Types.STR32
         )

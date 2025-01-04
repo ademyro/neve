@@ -40,6 +40,10 @@ class TypeErr(Err):
 
         return self
 
+    def suggest(self, suggestion: Suggestion) -> Self:
+        self.err.suggest(suggestion)
+        return self
+
     def make_err(self) -> Err:
         first_expr = self.exprs[0]
 

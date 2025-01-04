@@ -156,38 +156,113 @@ class Check(Visit[Ast, bool]):
 
         return had_err
 
-    def visit_Int(self, i: Int):
+    def visit_Concat(self, concat: Concat) -> bool:
+        if self.visit(concat.left):
+            return True
+    
+        if self.visit(concat.right):
+            return True
+
+        if concat.type.is_ignorable():
+            return True
+
+        if concat.type == Types.UNKNOWN:
+            left = concat.left
+            right = concat.right
+
+            # right is always the culprit, as for the parser to produce a 
+            # Concat node, it must find a Str node on the left hand side
+            culprit = right
+
+            utf_conversion = (
+                ".utf" + culprit.type.name[:-2]
+                if left.type != Types.STR
+                else ""
+            )
+
+            loc_to_replace = (
+                Loc.right_after(culprit.loc)
+                if not isinstance(culprit, Op)
+                else culprit.loc
+            )
+
+            show_fix = (
+                ".show" if not culprit.type.is_str() else ""
+            ) + utf_conversion
+
+            fix = (
+                show_fix
+                if not isinstance(culprit, Op)
+                else f"({culprit})" + show_fix
+            )
+
+            if not culprit.type.is_str():
+                return self.fail(TypeErr(
+                    f"cannot concatenate {culprit.type} to a Str type",
+                    concat.loc,
+                    left,
+                    right
+                ).suggest(
+                    Suggestion(
+                        f"you can convert '{culprit}' to a Str",
+                        f"converts it to {left.type} (not implemented yet)",
+                        loc_to_replace,
+                        fix,
+                        insert=not isinstance(culprit, Op)
+                    )
+                ))
+            else:
+                # otherwise, culprit is a Str, but doesn't have the right 
+                # encoding
+                return self.fail(TypeErr(
+                    f"cannot concatenate {culprit.type} to {left.type}",
+                    concat.loc,
+                    left,
+                    right
+                ).suggest(
+                    Suggestion(
+                        f"you can convert '{culprit}' to a {left.type}",
+                        f"converts it to {left.type} (not implemented yet)",
+                        loc_to_replace,
+                        fix,
+                        insert=not isinstance(culprit, Op)
+                    )
+                ))
+
+        return False
+
+    def visit_Int(self, i: Int) -> bool:
         _ = i
         
         return False
 
-    def visit_Float(self, f: Float):
+    def visit_Float(self, f: Float) -> bool:
         _ = f
 
         return False
 
-    def visit_Bool(self, b: Bool):
+    def visit_Bool(self, b: Bool) -> bool:
         _ = b
 
         return False
 
-    def visit_Str(self, s: Str):
+    def visit_Str(self, s: Str) -> bool:
         _ = s
 
         return False
 
-    def visit_Interpol(self, interpol: Interpol):
+    def visit_Interpol(self, interpol: Interpol) -> bool:
         _ = interpol
 
         # TODO: check if each expression implements Show
         return False
 
-    def visit_Nil(self, nil: Nil):
+    def visit_Nil(self, nil: Nil) -> bool:
         _ = nil
 
         return False
 
-    def visit_Ast(self, ast: Ast):
+    def visit_Ast(self, ast: Ast) -> bool:
         _ = ast
 
         return True

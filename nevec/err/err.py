@@ -225,6 +225,7 @@ class Line:
     def color(self, line: str, index=0, reset=False) -> List[str]:
         if index == len(line):
             if list(filter(lambda c: c > len(line), self.cols)) != []:
+                print(self.cols, len(line))
                 return [Color.RESET, Color.GRAY, "...", Color.RESET]
 
             return [Color.RESET]
@@ -251,12 +252,14 @@ class Suggestion:
         header_msg: str, 
         fix_msg: str, 
         loc_to_replace: Loc, 
-        fix: str
+        fix: str,
+        insert=False
     ):
         self.header_msg: str = header_msg 
         self.fix_msg: str = fix_msg
         self.loc: Loc = loc_to_replace
         self.fix: str = fix
+        self.insert: bool = insert
 
         self.col: int = self.loc.col
         self.line: int = self.loc.line
@@ -271,10 +274,12 @@ class Suggestion:
         chars = list(source_line)
 
         chars[self.col - 1:self.col - 1] = list(self.fix)
-        chars = (
-            chars[:self.col + self.loc.length - 1] +
-            chars[self.col + self.loc.length - 1 + self.replace_length:]
-        )
+
+        if not self.insert:
+            chars = (
+                chars[:self.col + self.loc.length - 1] +
+                chars[self.col + self.loc.length - 1 + self.replace_length:]
+            )
         
         modified_line = "".join(chars)
 

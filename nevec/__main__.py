@@ -28,13 +28,13 @@ if __name__ == "__main__":
         if had_err:
             exit(1)
 
+        print(ast)
+
         toir = ToIr()
 
         syms = toir.syms
 
         ir = toir.build_ir(ast)
-
-        print(ast)
 
         print("unoptimized:")
         print("\n".join(map(str, ir)))
@@ -43,9 +43,7 @@ if __name__ == "__main__":
         print("optimized:")
         print("\n".join(map(str, opt_ir)))
 
-
         graph = InterferenceGraph(syms.values())
-        print(graph.regs)
 
     output_file = filename.removesuffix(".neve") + ".geada"
 

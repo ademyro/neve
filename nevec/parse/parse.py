@@ -202,6 +202,13 @@ class Parse:
 
         self.show_err(ParseErr.unexpected_tok(self.curr, type))
 
+    def match(self, *type: TokType) -> bool:
+        if self.check(*type):
+            self.advance()
+            return True
+
+        return False
+
     def consume(self) -> Tok:
         tok = self.curr
         self.advance()
@@ -284,7 +291,7 @@ class Parse:
 
     def unary(self) -> Expr:
         if not self.check(TokType.MINUS, TokType.NOT):
-            return self.primary()
+            return self.call()
         
         op = self.consume()
         operand = self.unary()
@@ -297,6 +304,70 @@ class Parse:
 
         loc = op.loc.union_hull(operand.loc)
         return UnOp(unop_type, operand, loc)
+
+    def call(self) -> Expr:
+        expr = self.primary()
+
+        while True:
+            if self.match(TokType.LPAREN):
+                expr = self.fun_call(expr, parens=True)
+                continue
+
+            if TokType.is_expr_starter(self.curr.type):
+                expr = self.fun_call(expr)
+                continue
+
+            # this silly little check is just to accomodate for the special 
+            # case of:
+            # let msg = (
+            #   "Hello, "
+            #   "world!"
+            # )
+            if expr.type == Types.STR and self.check(TokType.STR):
+                expr = self.str_concat(expr)
+                continue
+            
+            else:
+                break
+
+        return expr
+
+    def fun_call(self, callee: Expr, parens=False) -> Expr:
+        if callee.type == Types.STR:
+            if parens:
+                self.show_err(
+                    Report.err(
+                        "string concatenation may not have parentheses",
+                        self.prev.loc
+                    ).show(
+                        Line(self.prev.loc).add(Note(
+                            NoteType.ERR,
+                            self.prev.loc,
+                            "may not have parentheses"
+                        ))
+                    )
+                )
+
+            return self.str_concat(callee)
+
+        raise NotImplementedError("function calls not implemented yet")
+
+    def str_concat(self, left: Expr) -> Expr:
+        right = self.expr()         
+
+        imaginary_loc = Loc.in_between(left.loc, right.loc)
+        imaginary_tok = Tok(TokType.PLUS, " ", imaginary_loc)
+
+        full_loc = left.loc.union_hull(right.loc)
+
+        return Concat(
+            left,
+            BinOp.Op.CONCAT,
+            right,
+
+            imaginary_tok,
+            full_loc
+        )
 
     def primary(self) -> Expr:
         tok = self.curr
@@ -360,6 +431,8 @@ class Parse:
 
         interpol_expr = self.expr()
 
+        self.expect(TokType.INTERPOL_SEP)
+        
         # TODO: make sure the interpol_expr implements Show.
 
         next = None
