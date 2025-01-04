@@ -12,7 +12,7 @@ from nevec.opcode.opcode import Opcode
 from nevec.lex.tok import Loc
 
 
-type Ir = IExpr | IOp | TAC
+type Ir = IExpr | IOp | Tac
 
 
 class IOp:
@@ -32,7 +32,7 @@ class IExpr:
         self.loc: Loc = loc
 
 
-class TAC:
+class Tac:
     def __init__(
         self,
         sym: Sym,
@@ -51,7 +51,7 @@ class TAC:
         return self.moment + 1
     
     def __repr__(self) -> str:
-        if isinstance(self.expr, IOp | NamelessSym):
+        if isinstance(self.expr, IOp):
             return str(self.expr)
 
         return f"{self.sym.full_name} = {self.expr}" 
@@ -72,12 +72,12 @@ class IUnOp(IExpr):
     def __init__(
         self,
         op: Op,
-        operand: Sym,
+        operand: Tac,
         loc: Loc,
         type: Type,
     ):
         self.op: IUnOp.Op = op
-        self.operand: Sym = operand
+        self.operand: Tac = operand
 
         self.loc: Loc = loc
         self.type: Type = type
@@ -85,19 +85,19 @@ class IUnOp(IExpr):
     def __repr__(self) -> str:
         match self.op:
             case IUnOp.Op.NEG:
-                return f"neg {self.operand}"
+                return f"neg {self.operand.sym}"
 
             case IUnOp.Op.NOT:
-                return f"not {self.operand}"
+                return f"not {self.operand.sym}"
 
             case IUnOp.Op.IS_NIL:
-                return f"isnil {self.operand}"
+                return f"isnil {self.operand.sym}"
 
             case IUnOp.Op.IS_NOT_NIL:
-                return f"isnotnil {self.operand}"
+                return f"isnotnil {self.operand.sym}"
             
             case IUnOp.Op.IS_ZERO:
-                return f"isz {self.operand}"
+                return f"isz {self.operand.sym}"
 
 
 class IBinOp(IExpr):
@@ -128,16 +128,16 @@ class IBinOp(IExpr):
 
     def __init__(
         self,
-        left: Sym,
+        left: Tac,
         op: Op,
-        right: Sym,
+        right: Tac,
         op_lexeme: str,
         loc: Loc,
         type: Type,
     ):
-        self.left: Sym = left
+        self.left: Tac = left
         self.op: IBinOp.Op = op
-        self.right: Sym = right
+        self.right: Tac = right
         self.op_lexeme: str = op_lexeme
 
         self.loc: Loc = loc
@@ -145,12 +145,19 @@ class IBinOp(IExpr):
 
     def __repr__(self) -> str:
         if self.op_lexeme == "":
-            return f"{self.left} {self.right}"
+            return f"{self.left.sym} {self.right.sym}"
 
-        return f"{self.left} {self.op_lexeme} {self.right}"
+        return f"{self.left.sym} {self.op_lexeme} {self.right.sym}"
 
 
-class IInt(IExpr):
+class IConst[T](IExpr):
+    def __init__(self, value: T, loc: Loc, type: Type):
+        self.value: T = value
+        self.loc: Loc = loc
+        self.type: Type = type
+
+
+class IInt(IConst):
     def __init__(
         self,
         value: int,
@@ -167,7 +174,7 @@ class IInt(IExpr):
         return f"{self.value}"
 
 
-class IFloat(IExpr):
+class IFloat(IConst):
     def __init__(
         self,
         value: float,
@@ -184,7 +191,7 @@ class IFloat(IExpr):
         return f"{self.value}"
 
 
-class IBool(IExpr):
+class IBool(IConst):
     def __init__(
         self,
         value: bool,
@@ -200,7 +207,7 @@ class IBool(IExpr):
         return str(self.value).lower()
 
 
-class IStr(IExpr):
+class IStr(IConst):
     def __init__(
         self,
         value: str,
@@ -217,7 +224,7 @@ class IStr(IExpr):
         return f"\"{self.value}\""
 
 
-class INil(IExpr):
+class INil(IConst):
     def __init__(
         self,
         loc: Loc,

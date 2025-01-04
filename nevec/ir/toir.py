@@ -5,38 +5,30 @@ from nevec.ast.visit import Visit
 
 from nevec.ir.ir import *
 from nevec.ir.reg import *
+from nevec.ir.val import Val
 
-class ToIr(Visit[Ast, TAC]):
+class ToIr(Visit[Ast, Tac]):
     DIGITS = "1234567890"
 
     def __init__(self):
-        self.syms: Dict[str, Sym] = {}
+        self.syms: Syms = Syms()
 
-        self.ops: List[TAC] = []
+        self.ops: List[Tac] = []
+
+    def new_sym[T](
+        self,
+        moment: Optional[Moment]=None,
+        name: str="t",
+        value: Optional[T]=None
+    ) -> Sym:
+        moment = moment if moment else self.next_moment()
+
+        return self.syms.new_sym(moment, name, value)
 
     def next_moment(self) -> Moment:
         return len(self.ops)
 
-    def new_sym(self, moment: Optional[Moment]=None, name: str="t") -> Sym:
-        moment = moment if moment else self.next_moment()
-
-        name, index = self.next_available_name(name)
-
-        sym = Sym(name, index, moment)
-
-        self.syms[sym.full_name] = sym
-
-        return sym
-
-    def next_available_name(self, name: str, index: int=0) -> Tuple[str, int]:
-        full_name = name + str(index)
-
-        if full_name not in self.syms.keys():
-            return name, index
-
-        return self.next_available_name(name, index + 1)
-
-    def build_ir(self, ast: Ast) -> List[TAC]:
+    def build_ir(self, ast: Ast) -> List[Tac]:
         if not isinstance(ast, Program):
             raise ValueError("Ast must begin with a Program node")
 
@@ -44,7 +36,7 @@ class ToIr(Visit[Ast, TAC]):
 
         return self.ops
 
-    def visit_Program(self, program: Program) -> TAC:
+    def visit_Program(self, program: Program) -> Tac:
         expr = self.visit(program.expr)
 
         ret = IRet(
@@ -54,7 +46,7 @@ class ToIr(Visit[Ast, TAC]):
 
         expr.sym.last_used(expr.next_moment())
 
-        tac = TAC(
+        tac = Tac(
             ret.sym,
             ret,
             expr.loc
@@ -63,21 +55,21 @@ class ToIr(Visit[Ast, TAC]):
         self.ops.append(tac)
         return tac
 
-    def visit_Parens(self, parens: Parens) -> TAC: 
+    def visit_Parens(self, parens: Parens) -> Tac: 
         return self.visit(parens.expr)
 
-    def visit_UnOp(self, un_op: UnOp) -> TAC:
+    def visit_UnOp(self, un_op: UnOp) -> Tac:
         operand = self.visit(un_op.expr)
         
         expr = IUnOp(
             IUnOp.Op(un_op.op.value),
-            operand.sym,
+            operand,
 
             un_op.loc,
             un_op.type
         )
 
-        tac = TAC(
+        tac = Tac(
             self.new_sym(self.next_moment()),
             expr,
             expr.loc
@@ -86,16 +78,16 @@ class ToIr(Visit[Ast, TAC]):
         self.ops.append(tac)
         return tac
 
-    def visit_Bitwise(self, bitwise: Bitwise) -> TAC:
+    def visit_Bitwise(self, bitwise: Bitwise) -> Tac:
         left = self.visit(bitwise.left)
         right = self.visit(bitwise.right)
 
         op_lexeme = bitwise.tok.lexeme
 
         expr = IBinOp(
-            left.sym,
+            left,
             IBinOp.Op(bitwise.op.value),
-            right.sym,
+            right,
             op_lexeme,
 
             bitwise.loc,
@@ -107,7 +99,7 @@ class ToIr(Visit[Ast, TAC]):
         left.sym.last_used(moment)
         right.sym.last_used(moment)
 
-        tac = TAC(
+        tac = Tac(
             self.new_sym(moment),
             expr,
             expr.loc
@@ -116,16 +108,16 @@ class ToIr(Visit[Ast, TAC]):
         self.ops.append(tac)
         return tac
 
-    def visit_Comparison(self, comparison: Comparison) -> TAC:
+    def visit_Comparison(self, comparison: Comparison) -> Tac:
         left = self.visit(comparison.left)
         right = self.visit(comparison.right)
 
         op_lexeme = comparison.tok.lexeme
 
         expr = IBinOp(
-            left.sym,
+            left,
             IBinOp.Op(comparison.op.value),
-            right.sym,
+            right,
             op_lexeme,
 
             comparison.loc,
@@ -137,7 +129,7 @@ class ToIr(Visit[Ast, TAC]):
         left.sym.last_used(moment)
         right.sym.last_used(moment)
 
-        tac = TAC(
+        tac = Tac(
             self.new_sym(moment),
             expr,
             expr.loc
@@ -146,16 +138,16 @@ class ToIr(Visit[Ast, TAC]):
         self.ops.append(tac)
         return tac
 
-    def visit_Arith(self, arith: Arith) -> TAC:
+    def visit_Arith(self, arith: Arith) -> Tac:
         left = self.visit(arith.left)
         right = self.visit(arith.right)
 
         op_lexeme = arith.tok.lexeme
 
         expr = IBinOp(
-            left.sym,
+            left,
             IBinOp.Op(arith.op.value),
-            right.sym,
+            right,
             op_lexeme,
 
             arith.loc,
@@ -167,7 +159,7 @@ class ToIr(Visit[Ast, TAC]):
         left.sym.last_used(moment)
         right.sym.last_used(moment)
 
-        tac = TAC(
+        tac = Tac(
             self.new_sym(moment),
             expr,
             expr.loc
@@ -176,16 +168,16 @@ class ToIr(Visit[Ast, TAC]):
         self.ops.append(tac)
         return tac
 
-    def visit_Int(self, i: Int) -> TAC:
+    def visit_Int(self, i: Int) -> Tac:
         expr = IInt(
             i.value,
             i.loc,
             i.type,
         )
 
-        sym = self.new_sym()
+        sym = self.new_sym(value=i.value)
 
-        tac = TAC(
+        tac = Tac(
             sym,
             expr,
             expr.loc
@@ -194,16 +186,16 @@ class ToIr(Visit[Ast, TAC]):
         self.ops.append(tac)
         return tac
 
-    def visit_Float(self, f: Float) -> TAC:
+    def visit_Float(self, f: Float) -> Tac:
         expr = IFloat(
             f.value,
             f.loc,
             f.type,
         )
 
-        sym = self.new_sym()
+        sym = self.new_sym(value=f.value)
 
-        tac = TAC(
+        tac = Tac(
             sym,
             expr,
             expr.loc
@@ -212,16 +204,15 @@ class ToIr(Visit[Ast, TAC]):
         self.ops.append(tac)
         return tac
 
-    def visit_Bool(self, b: Bool) -> TAC:
-        expr = IFloat(
+    def visit_Bool(self, b: Bool) -> Tac:
+        expr = IBool(
             b.value,
             b.loc,
-            b.type,
         )
 
-        sym = self.new_sym()
+        sym = self.new_sym(value=b.value)
 
-        tac = TAC(
+        tac = Tac(
             sym,
             expr,
             expr.loc
@@ -230,16 +221,16 @@ class ToIr(Visit[Ast, TAC]):
         self.ops.append(tac)
         return tac
 
-    def visit_Str(self, s: Str) -> TAC:
+    def visit_Str(self, s: Str) -> Tac:
         expr = IStr(
             s.value,
             s.loc,
             s.type,
         )
 
-        sym = self.new_sym()
+        sym = self.new_sym(value=s.value)
 
-        tac = TAC(
+        tac = Tac(
             sym,
             expr,
             expr.loc
@@ -248,14 +239,14 @@ class ToIr(Visit[Ast, TAC]):
         self.ops.append(tac)
         return tac
 
-    def visit_Nil(self, nil: Nil) -> TAC:
+    def visit_Nil(self, nil: Nil) -> Tac:
         expr = INil(
             nil.loc
         )
 
-        sym = self.new_sym()
+        sym = self.new_sym(value=Val.Nil())
 
-        tac = TAC(
+        tac = Tac(
             sym,
             expr,
             expr.loc

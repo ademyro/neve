@@ -1,4 +1,4 @@
-from typing import Optional, Self
+from typing import List, Dict, Optional, Self, Tuple
 
 type Moment = int
 
@@ -24,17 +24,38 @@ class Lifetime:
         return f"({self.first}, {self.last})"
 
 
-class Sym:
-    def __init__(self, name: str, index: int, moment: Moment):
+class Sym[T]:
+    def __init__(
+        self,
+        name: str,
+        index: int,
+        moment: Moment,
+        value: Optional[T]=None
+    ):
         self.name: str = name
         self.index: int = index
         self.first: Moment = moment
 
+        self.value: Optional[T] = value
+
         self.full_name = self.name + str(self.index)
+        self.uses: int = 0
 
         self.lifetime: Optional[Lifetime] = None
 
+    def rename(self, after: Self):
+        if self.index < after.index:
+            return
+
+        self.index = after.index
+        self.full_name = self.name + str(self.index)
+
+    def propagate(self):
+        self.uses -= 1
+
     def last_used(self, last: Moment):
+        self.uses += 1
+
         self.lifetime = Lifetime(self.first, last)
 
     def is_alive_in(self, moment: Moment) -> bool:
@@ -46,12 +67,31 @@ class Sym:
         return self.full_name
 
 
-class NamelessSym[T](Sym):
-    def __init__(self, value: T, moment: Moment):
-        self.value = value
-        self.first: Moment = moment
+class Syms:
+    def __init__(self):
+        self.syms: Dict[str, Sym] = {}
 
-        self.lifetime: Optional[Lifetime] = None
+    def new_sym[T](
+        self,
+        moment: Moment,
+        name: str="t",
+        value: Optional[T]=None
+    ) -> Sym:
+        name, index = self.next_available_name(name)
 
-    def __repr__(self) -> str:
-        return str(self.value)
+        sym = Sym(name, index, moment, value)
+
+        self.syms[sym.full_name] = sym
+
+        return sym
+
+    def next_available_name(self, name: str, index: int=0) -> Tuple[str, int]:
+        full_name = name + str(index)
+
+        if full_name not in self.syms.keys():
+            return name, index
+
+        return self.next_available_name(name, index + 1)
+
+    def values(self) -> List[Sym]:
+        return list(self.syms.values())

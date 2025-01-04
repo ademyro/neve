@@ -13,7 +13,6 @@ class Peephole:
         # i needed so much mental gymnastics for something so silly
         list_of_lists_of_bytes = map(Instr.emit, self.peephole)
 
-
         self.flushed = [b for r in list_of_lists_of_bytes for b in r]
 
         self.has_flushed = True

@@ -130,7 +130,7 @@ class Compile(Visit[Ir, None]):
         # TODO: implement for Opcode.CONST_LONG
         self.emit(Instr(Opcode.CONST, reg, const_index), line)
     
-    def compile(self, ir: List[TAC]):
+    def compile(self, ir: List[Tac]):
         if ir == []:
             return 
 
@@ -140,7 +140,7 @@ class Compile(Visit[Ir, None]):
 
         self.compile(ir[1:])
 
-    def visit_TAC(self, tac: TAC):
+    def visit_Tac(self, tac: Tac):
         sym  = tac.sym
         dest_reg = self.graph.get_reg(sym)
 
@@ -150,14 +150,14 @@ class Compile(Visit[Ir, None]):
         self.emit(Instr(Opcode.RET, dest_reg), ret.loc.line)
 
     def visit_IUnOp(self, un_op: IUnOp, dest_reg: int):
-        operand = self.reg_of(un_op.operand)
+        operand = self.reg_of(un_op.operand.sym)
         opcode = un_op.op.opcode()
 
         self.emit(Instr(opcode, dest_reg, operand), un_op.loc.line)
 
     def visit_IBinOp(self, bin_op: IBinOp, dest_reg: int):
-        left = self.reg_of(bin_op.left)
-        right = self.reg_of(bin_op.right)
+        left = self.reg_of(bin_op.left.sym)
+        right = self.reg_of(bin_op.right.sym)
 
         instr = Instr(
             bin_op.op.opcode(),

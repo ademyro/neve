@@ -5,6 +5,7 @@ from nevec.parse.parse import Parse
 from nevec.ir.toir import ToIr
 from nevec.ir.reg import InterferenceGraph
 from nevec.compile.compile import Compile
+from nevec.opt.opt import Opt
 
 if __name__ == "__main__":
     args = sys.argv
@@ -30,18 +31,24 @@ if __name__ == "__main__":
         toir = ToIr()
 
         ir = toir.build_ir(ast)
-        syms = list(toir.syms.values())
+        syms = toir.syms.values()
 
         graph = InterferenceGraph(syms)
 
         print(ast)
+
+        print("unoptimized:")
         print("\n".join(map(str, ir)))
+
+        opt_ir = Opt.optimize(ir)
+        print("optimized:")
+        print("\n".join(map(str, opt_ir)))
 
     output_file = filename.removesuffix(".neve") + ".geada"
 
     with open(output_file, "wb") as f:
         compile = Compile(graph)
-        compile.compile(ir)
+        compile.compile(opt_ir)
     
         bytecode = compile.output(to=f)
 

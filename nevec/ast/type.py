@@ -10,6 +10,8 @@ class TypeKind(Enum):
     BOOL = auto()
     NIL = auto()
     STR = auto()
+    STR16 = auto()
+    STR32 = auto()
 
 
 @dataclass
@@ -21,6 +23,13 @@ class Type:
          return (
             self == Types.INT or
             self == Types.FLOAT
+        )
+
+    def is_str(self) -> bool:
+        return (
+            self == TypeKind.STR or
+            self == Types.STR16 or
+            self == Types.STR32
         )
 
     def poison(self):
@@ -61,6 +70,8 @@ class Types:
     BOOL = Type(TypeKind.BOOL, "Bool")
     NIL = Type(TypeKind.NIL, "Nil")
     STR = Type(TypeKind.STR, "Str")
+    STR16 = Type(TypeKind.STR16, "Str16")
+    STR32 = Type(TypeKind.STR32, "Str32")
 
 
 class TypeTable:
