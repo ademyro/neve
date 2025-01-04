@@ -69,8 +69,11 @@ class ToIr(Visit[Ast, Tac]):
             un_op.type
         )
 
+        moment = self.next_moment()
+        operand.sym.last_used(moment)
+
         tac = Tac(
-            self.new_sym(self.next_moment()),
+            self.new_sym(moment),
             expr,
             expr.loc
         )
