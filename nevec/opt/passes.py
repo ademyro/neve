@@ -24,7 +24,7 @@ class Pass(Visit[Ir, None]):
         if sym.uses > 0:
             return
 
-        index = sym.first - self.elims
+        index = max(0, sym.first - self.elims)
 
         if len(self.opts) <= index:
             raise ValueError("attempt to eliminate symbol that does not exist")
@@ -32,6 +32,8 @@ class Pass(Visit[Ir, None]):
         del self.opts[index]
         
         lend_name_to.rename(after=sym)
+
+        del sym
 
         self.elims += 1
 

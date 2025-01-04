@@ -11,3 +11,5 @@ __pycache__/
 geada_writer.py
 build.sh
 run.sh
+
+*.geada
