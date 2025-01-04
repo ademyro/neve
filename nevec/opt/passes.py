@@ -3,8 +3,10 @@ from nevec.ir.ir import *
 from nevec.ast.visit import Visit
 
 class Pass(Visit[Ir, None]):
-    def __init__(self):
+    def __init__(self, syms: Syms):
         self.opts: List[Tac] = []
+
+        self.syms: Syms = syms
 
         self.elims: int = 0
 

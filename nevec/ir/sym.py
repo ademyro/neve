@@ -93,5 +93,8 @@ class Syms:
 
         return self.next_available_name(name, index + 1)
 
+    def cleanup(self):
+        self.syms = {n: s for n, s in self.syms.items() if s.uses > 0}
+
     def values(self) -> List[Sym]:
         return list(self.syms.values())
