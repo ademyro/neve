@@ -1,0 +1,255 @@
+from dataclasses import dataclass
+from enum import Enum, auto
+from typing import Optional, Self
+
+class Loc:
+    def __init__(self, col: int, line: int, length: int):
+        self.col: int = col
+        self.line: int = line
+        self.length: int = length
+
+        self.on_multiple_lines: bool = False
+
+    @staticmethod
+    def new():
+        return Loc(0, 1, 0)
+
+    @staticmethod
+    def in_between(a: "Loc", b: "Loc") -> "Loc":
+        col = (
+            (a.col + b.col) // 2
+            if a.line == b.line
+            else a.col + 1
+        )
+
+        length = (
+            b.col - a.col 
+            if a.line == b.line 
+            else 1
+        )
+
+        return Loc(
+            col,
+            a.line,
+            length
+        )
+
+    @staticmethod
+    def right_after(other: "Loc") -> "Loc":
+        return Loc(
+            other.col + other.length,
+            other.line,
+            1
+        )
+
+    def copy(self):
+        return Loc(self.col, self.line, self.length)
+    
+    def advance(self):
+        self.length += 1
+
+    def newline(self):
+        self.col = 0
+        self.line += 1
+
+    def sync(self):
+        self.col += self.length
+        self.length = 0
+
+    # not using `Self` here because silly mypy thinks Loc ≠ Self@Loc
+    def union_hull(self, other: "Loc") -> "Loc":
+        if self.line != other.line:
+            if self.on_multiple_lines:
+                return self
+            
+            if other.on_multiple_lines:
+                return other
+
+            earliest_loc = self if self.line < other.line else other
+
+            earliest_loc.on_multiple_lines = True
+
+            return earliest_loc
+
+        max_loc = self if self.col > other.col else other
+
+        min_col = min(self.col, other.col)
+        max_col = max(self.col, other.col)
+
+        length = max_col - min_col + max_loc.length
+
+        return Loc(min_col, self.line, length)
+
+    def __eq__(self, other: Self):
+        return (
+            self.col == other.col and
+            self.line == other.line and
+            self.length == other.length
+        )
+
+    def __repr__(self):
+        return f"{self.line}:{self.col}"
+
+
+class TokType(Enum):
+    SEMICOL = auto()
+    COMMA = auto()
+    DOT = auto()
+    DOT_DOT = auto()
+    
+    PLUS = auto()
+    MINUS = auto()  
+    STAR = auto()
+    SLASH = auto()
+    
+    SHL = auto()
+    SHR = auto()
+    BIT_AND = auto()
+    BIT_XOR = auto()
+    BIT_OR = auto()
+
+    NEQ = auto()
+    EQ = auto()
+    GT = auto()
+    GTE = auto()
+    LT = auto()
+    LTE = auto()
+
+    ASSIGN = auto()
+
+    EXCLAM = auto()
+    QUESTION = auto()
+
+    AND = auto()
+    CLASS = auto()
+    DO = auto()
+    ELSE = auto()
+    END = auto()
+    ENUM = auto()
+    FOR = auto()
+    FUN = auto()
+    IF = auto()
+    LET = auto()
+    MATCH = auto()
+    OR = auto()
+    PUTS = auto()
+    RETURN = auto()
+    UNION = auto()
+    VAR = auto()
+    WHILE = auto()
+
+    RPAREN = auto()
+    RBRACKET = auto()
+    PIPE = auto()
+
+    LPAREN = auto()
+    LBRACKET = auto()
+
+    ID = auto()
+    STR = auto()
+    INT = auto() 
+    FLOAT = auto()
+    INTERPOL = auto()
+
+    FALSE = auto()
+    NIL = auto()
+    NOT = auto()
+    SELF = auto()
+    TRUE = auto()
+    WITH = auto()
+
+    INTERPOL_SEP = auto()
+
+    NEWLINE = auto()
+    ERR = auto()
+    EOF = auto()
+
+    @staticmethod
+    def match(seq: str) -> Optional["TokType"]:
+        return TokTypes.TOKS.get(seq) 
+
+    @staticmethod
+    def match_keyword(id: str) -> Optional["TokType"]:
+        return TokTypes.KEYWORDS.get(id)
+
+    @staticmethod
+    def is_expr_starter(type: "TokType") -> bool:
+        return (
+            type.value >= TokType.LPAREN.value and 
+            type.value <= TokType.WITH.value
+        )
+
+class TokTypes:
+    KEYWORDS = {
+        "and": TokType.AND,
+        "bitor": TokType.BIT_OR,
+        "class": TokType.CLASS,
+        "do": TokType.DO,
+        "else": TokType.ELSE,
+        "end": TokType.END,
+        "enum": TokType.ENUM,
+        "false": TokType.FALSE,
+        "for": TokType.FOR,
+        "fun": TokType.FUN,
+        "if": TokType.IF,
+        "let": TokType.LET,
+        "match": TokType.MATCH,
+        "nil": TokType.NIL,
+        "not": TokType.NOT,
+        "or": TokType.OR,
+        "puts": TokType.PUTS,
+        "return": TokType.RETURN,
+        "self": TokType.SELF,
+        "true": TokType.TRUE,
+        "union": TokType.UNION,
+        "var": TokType.VAR,
+        "while": TokType.WHILE,
+        "with": TokType.WITH
+    }
+
+    TOKS = {
+        ";": TokType.SEMICOL,
+        ",": TokType.COMMA,
+        ".": TokType.DOT,
+        "..": TokType.DOT_DOT,
+        
+        "-": TokType.MINUS,
+        "+": TokType.PLUS,
+        "*": TokType.STAR,
+        "/": TokType.SLASH,
+        
+        "<<": TokType.SHL,
+        ">>": TokType.SHR,
+        "&": TokType.BIT_AND,
+        "^": TokType.BIT_XOR,
+
+        "!=": TokType.NEQ,
+        "=": TokType.ASSIGN,
+        "==": TokType.EQ,
+        ">": TokType.GT,
+        ">=": TokType.GTE,
+        "<": TokType.LT,
+        "<=": TokType.LTE,
+
+        "!": TokType.EXCLAM,
+        "?": TokType.QUESTION,
+
+        "(": TokType.LPAREN,
+        ")": TokType.RPAREN,
+        "[": TokType.LBRACKET,
+        "]": TokType.RBRACKET,
+        "|": TokType.PIPE,
+
+        "}": TokType.INTERPOL_SEP
+    }
+
+@dataclass
+class Tok:
+    type: TokType 
+    lexeme: str
+    loc: Loc
+    value: Optional[any] = None
+
+    @staticmethod
+    def eof() -> "Tok":
+        return Tok(TokType.EOF, "", Loc.new())

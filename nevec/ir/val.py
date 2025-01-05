@@ -1,0 +1,3 @@
+class Val:
+    class Nil:
+        ...

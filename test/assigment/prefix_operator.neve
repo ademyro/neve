@@ -1,2 +1,4 @@
-var a = "a"
-not a = "value" # Error at '=': Invalid assignment target.
+puts a = "a"
+
+# this should be an error
+not a = "value"

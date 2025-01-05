@@ -1,1 +1,2 @@
-unknown = "what" # expect error: Undefined variable 'unknown'.
+# this should fail
+unknown = "what"
