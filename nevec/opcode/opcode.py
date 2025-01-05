@@ -19,6 +19,7 @@ class Opcode(Enum):
     IS_NIL = auto()
     IS_NOT_NIL = auto()
     IS_ZERO = auto()
+    SHOW = auto()
 
     ADD = auto()
     SUB = auto()
@@ -37,8 +38,6 @@ class Opcode(Enum):
     LESS_EQ = auto()
 
     CONCAT = auto()
-
-    INTERPOL = auto()
 
     RET = auto()
     

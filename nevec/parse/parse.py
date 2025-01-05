@@ -69,13 +69,13 @@ class ParseErr:
 
     @staticmethod
     def expected_tok(loc: Loc, expected: TokType) -> Err:
-        expected_lexeme = {
+        expected_lexeme = [
             lexeme 
             for lexeme in TokTypes.TOKS
             if TokTypes.TOKS[lexeme] == expected
-        }
+        ]
 
-        expected_lexeme = list(expected_lexeme)[0]
+        expected_lexeme = expected_lexeme[0]
 
         err = Report.err(
             f"'{expected_lexeme}' was expected, but found nothing",
@@ -350,6 +350,8 @@ class Parse:
 
             return self.str_concat(callee)
 
+        print(callee)
+        print(self.curr)
         raise NotImplementedError("function calls not implemented yet")
 
     def str_concat(self, left: Expr) -> Expr:

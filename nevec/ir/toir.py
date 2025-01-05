@@ -200,6 +200,31 @@ class ToIr(Visit[Ast, Tac]):
         self.ops.append(tac)
         return tac
 
+    def visit_Show(self, show: Show) -> Tac:
+        operand = self.visit(show.expr)
+
+        expr = IUnOp(
+            IUnOp.Op.SHOW,
+            operand,
+            show.loc,
+            show.type
+        )
+
+        moment = self.next_moment()
+
+        sym = self.new_sym(moment)
+
+        operand.sym.last_used(moment)
+
+        tac = Tac(
+            sym,
+            expr,
+            expr.loc
+        )
+
+        self.ops.append(tac)
+        return tac
+
     def visit_Int(self, i: Int) -> Tac:
         expr = IInt(
             i.value,
@@ -270,6 +295,38 @@ class ToIr(Visit[Ast, Tac]):
 
         self.ops.append(tac)
         return tac
+
+    def visit_Interpol(self, interpol: Interpol) -> Tac:
+        synthetic_str = Str(interpol.left, interpol.loc)
+
+        synthetic_show = Show(
+            interpol.expr,
+            interpol.expr.loc
+        )
+
+        expr = interpol.expr
+        if not interpol.expr.type.is_str():
+            expr = synthetic_show
+
+        synthetic_first_concat = Concat(
+            synthetic_str,
+            BinOp.Op.CONCAT,
+            expr,
+
+            Tok.eof(),
+            interpol.loc.union_hull(interpol.expr.loc)
+        )
+
+        synthetic_second_concat = Concat(
+            synthetic_first_concat,
+            BinOp.Op.CONCAT,
+            interpol.next, 
+
+            Tok.eof(),
+            synthetic_first_concat.loc.union_hull(interpol.next.loc)
+        )
+
+        return self.visit(synthetic_second_concat)
 
     def visit_Nil(self, nil: Nil) -> Tac:
         expr = INil(

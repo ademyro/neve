@@ -17,6 +17,7 @@ typedef enum {
   OP_IS_NIL,
   OP_IS_NOT_NIL,
   OP_IS_ZERO,
+  OP_SHOW,
   OP_ADD,
   OP_SUB,
   OP_MUL,
@@ -33,7 +34,6 @@ typedef enum {
   OP_GREATER_EQ,
   OP_LESS_EQ,
   OP_CONCAT,
-  OP_INTERPOL,
   OP_RET,
 } OpCode;
 

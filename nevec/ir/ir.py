@@ -64,6 +64,7 @@ class IUnOp(IExpr):
         IS_NIL = auto()
         IS_NOT_NIL = auto()
         IS_ZERO = auto()
+        SHOW = auto()
 
         def opcode(self) -> Opcode:
             return Opcode(Opcode.NEG.value + self.value - 1)
@@ -98,6 +99,9 @@ class IUnOp(IExpr):
             
             case IUnOp.Op.IS_ZERO:
                 return f"isz {self.operand.sym}"
+
+            case IUnOp.Op.SHOW:
+                return f"show {self.operand.sym}"
 
 
 class IBinOp(IExpr):

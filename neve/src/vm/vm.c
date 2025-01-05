@@ -163,8 +163,22 @@ static Aftermath run(NeveVM *vm) {
         break;
 
       case OP_IS_ZERO:
-        vm->regs[READ_BYTE()] = BOOL_VAL(VAL_AS_NUM(vm->regs[READ_BYTE()]) == 0);
+        vm->regs[READ_BYTE()] = BOOL_VAL(
+          VAL_AS_NUM(vm->regs[READ_BYTE()]) == 0
+        );
+
         break;
+
+      case OP_SHOW: {
+        const uint8_t size = 32;
+        char *buffer = ALLOC(char, size);
+
+        uint32_t finalSize = valAsStr(buffer, vm->regs[READ_BYTE()]);
+
+        vm->regs[READ_BYTE()] = OBJ_VAL(allocStr(vm, true, buffer, finalSize));
+
+        break;
+      }
 
       case OP_ADD:
         BIN_OP(NUM_VAL, +);
@@ -182,57 +196,9 @@ static Aftermath run(NeveVM *vm) {
         BIN_OP(NUM_VAL, /);
         break;
 
-      case OP_CONCAT: {
+      case OP_CONCAT:
         concat(vm);
         break;
-      }
-
-      /*
-      case OP_INTERPOL: {
-        const uint8_t times = READ_BYTE();
-        const size_t initialSize = 32;
-        
-        const bool endsWithStr = (times & 1) == 0;
-
-        bool shouldConvertToStr = endsWithStr;
-
-        // the stack looks like this:
-        // [S] [E] [S] [E] [S] [E]
-        // where S denotes a string value and E denotes a value of
-        // any type.
-        // we convert the top of the stack to a string and obtain this 
-        // configuration:
-        // [S] [E] [S] [E] [S] [S]
-        if (!endsWithStr) {
-          char *buffer = ALLOC(char, initialSize);
-          uint32_t length = valAsStr(buffer, vm->top[-1]);
-
-          ObjStr *str = allocStr(vm, true, buffer, length);
-          vm->top[-1] = OBJ_VAL(str);
-        }
-
-        for (uint8_t i = 0; i < times; i++) {
-          // not really proud of this but hey, it saves a bit of memory.
-          if (shouldConvertToStr) {
-            const int8_t slot = -2;
-
-            char *buffer = ALLOC(char, initialSize);
-            uint32_t length = valAsStr(buffer, vm->top[slot]);
-
-            ObjStr *str = allocStr(vm, true, buffer, length);
-            vm->top[slot] = OBJ_VAL(str);
-          }
-
-#ifdef DEBUG_EXEC
-          printStack(vm);     
-#endif
-
-          concat(vm);
-        }
-
-        break;
-      }
-      */
 
       case OP_SHL:
         BIT_OP(<<);

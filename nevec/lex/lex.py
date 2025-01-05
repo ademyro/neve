@@ -108,11 +108,7 @@ class Lex:
                 return self.err("'}' outside string interpolation")
             
             self.interpol_depth -= 1
-
             self.in_interpol = True
-
-            self.advance()
-            self.sync()
 
             return self.new_tok(TokType.INTERPOL_SEP)
 
@@ -213,28 +209,31 @@ class Lex:
         )
 
     def string(self, capture_first_char=True):
-        if capture_first_char:
-            self.advance()
+        self.advance()
+
+        if not capture_first_char:
+            self.sync()
+
+        if self.in_interpol:
+            self.in_interpol = False
 
         while self.char != '"' and not self.is_at_end():
-            self.advance()
-
             if (
                 self.char == "#" and
                 self.peek() == "{" 
             ):
                 return self.interpol()
+
+            self.advance()
             
             if self.char == "\n":
                 self.loc.newline()
 
-        if self.in_interpol:
-            self.in_interpol = False
-            
         if self.is_at_end():
             return self.err("unterminated string")
         
         self.advance()
+
         return self.new_tok(TokType.STR)
 
     def interpol(self):

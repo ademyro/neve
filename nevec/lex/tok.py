@@ -238,7 +238,9 @@ class TokTypes:
         ")": TokType.RPAREN,
         "[": TokType.LBRACKET,
         "]": TokType.RBRACKET,
-        "|": TokType.PIPE
+        "|": TokType.PIPE,
+
+        "}": TokType.INTERPOL_SEP
     }
 
 @dataclass

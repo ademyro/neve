@@ -169,6 +169,21 @@ class Concat(BinOp):
 
         return self.left.type.unless_unknown(self.left.type, self.right.type)
 
+
+class Show(Expr):
+    def __init__(self, expr: Expr, loc: Loc):
+        self.expr: Expr = expr
+        self.loc: Loc = loc
+
+        self.type: Type = self.infer_type()
+    
+    def infer_type(self) -> Type:
+        return Types.STR
+
+    def __repr__(self) -> str:
+        return f"{self.expr}.show"
+
+
 class Int(Expr):
     def __init__(self, value: int, loc: Loc):
         self.value = value

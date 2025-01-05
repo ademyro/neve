@@ -190,6 +190,9 @@ size_t disasmInstr(Chunk *ch, Val *regs, size_t offset) {
     case OP_IS_ZERO:
       return manyRegInstr("isz", ch, regs, offset, 2);
 
+    case OP_SHOW:
+      return manyRegInstr("show", ch, regs, offset, 2);
+
     case OP_ADD:
       return manyRegInstr("add", ch, regs, offset, 3);
 
@@ -204,9 +207,6 @@ size_t disasmInstr(Chunk *ch, Val *regs, size_t offset) {
 
     case OP_CONCAT:
       return manyRegInstr("concat", ch, regs, offset, 3);
-
-    case OP_INTERPOL:
-      return byteInstr("interpol", ch, offset);
 
     case OP_SHL:
       return manyRegInstr("shl", ch, regs, offset, 3);
