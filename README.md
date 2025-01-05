@@ -3,36 +3,26 @@ Neve is a modern, hybrid-paradigm programming language designed to deliver relia
 
 ## Example
 ```rb
-fun main
-  let my_tea = Tea with
-    herbs = Herbs.Chamomile 
-  end
+idea Nat = Int | self >= 0
 
-  my_tea.brew
+fun fib(n Nat)
+  match n
+    | < 2 = n
+    | else = fib(n - 1) + fib(n - 2)
+  end
+end
+
+fun main
+  let fib_seq = 0..10 | fib n
+
+  puts fib_seq
 end
 ```
 
 \* Syntactical aesthetics are ultimately subjective, and Neve's syntax may not be considered 'soothing' by everyone.
 
-## So, what’s happening?
+## So, what *happened*?
 
-Neve’s compiler is going to be ported from C to Python.  This should allow us to implement complex optimizations more
-efficiently.  We’re doing this because we want Neve to support separate compilation, and in doing so implement further 
-optimizations on the Neve code before it’s translated to bytecode.
+The project has been moved to [its own organization!](https://github.com/neve-lang)  The compiler and the interpreter VM have been separated into two different projects.
 
-This means that we’re going to introduce two major changes:
-
-* We’re getting rid of the REPL.  Having a separate compiler for Neve means longer compilation times, and a less snappy 
-REPL experience.  Moreover, writing the bytecode output to a file and *then* having the Neve interpreter read it isn’t exactly
-desirable--we don’t want to create a new file for the tiniest expressions.
-  * It might be possible to get around that, though.  If we can output the bytecode to an array of bytes without needing to
-    create a new file just for that, and then pass that array to the interpreter, having a REPL might be manageable.  
-    Ideally, we could implement a “REPL mode” for `nevec` that skips through all optimizations, to provide the snappiest 
-    experience.
-
-* Neve will now have two components--`neve` and `nevec`.  `nevec` will compile the `.neve` file to a `.geada` bytecode 
-file, and `neve` will interpret that file.  `nevec` will be implemented in Python, but we will immediately work on 
-self-hosting it (reimplementing it in Neve) the moment we can.
-
-Eventually, Neve will be moved to a GitHub organization instead of sitting on my GitHub account, and once that step 
-is completed, `neve` and `nevec` will be hosted on two separate projects.
+This repository will no longer receive updates--updates will take place in the new repositories instead.
