@@ -53,6 +53,9 @@ class ConstFold(Pass):
 
             case Types.BOOL:
                 return self.fold_bool(un_op, ctx)
+            
+            case Types.STR:
+                return self.fold_show(un_op, ctx)
 
         raise ValueError("malformed IR")
 
@@ -111,6 +114,37 @@ class ConstFold(Pass):
                 )
 
         expr = IBool(result, un_op.loc)
+
+        return Tac(dest_sym, expr, un_op.loc)
+
+    def fold_show(self, un_op: IUnOp, ctx: Tac) -> Tac:
+        dest_sym = ctx.sym
+
+        operand = un_op.operand.expr
+
+        assert isinstance(operand, IConst)
+
+        operand_sym = un_op.operand.sym
+        operand_sym.propagate()
+
+        # again, i'm so sorry
+        result = None
+        
+        match operand.type:
+            case Types.INT | Types.FLOAT:
+                result = "{:.14g}".format(operand.value)
+            
+            case Types.BOOL:
+                result = str(operand.value).lower()
+
+            case _:
+                result = operand.value
+
+        expr = IStr(
+            result,
+            un_op.loc,
+            un_op.type
+        )
 
         return Tac(dest_sym, expr, un_op.loc)
 

@@ -225,7 +225,6 @@ class Line:
     def color(self, line: str, index=0, reset=False) -> List[str]:
         if index == len(line):
             if list(filter(lambda c: c > len(line), self.cols)) != []:
-                print(self.cols, len(line))
                 return [Color.RESET, Color.GRAY, "...", Color.RESET]
 
             return [Color.RESET]

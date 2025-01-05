@@ -51,7 +51,7 @@ void printVal(Val val) {
       break;
     
     case VAL_NUM:
-      printf("%g", VAL_AS_NUM(val));
+      printf("%.14g", VAL_AS_NUM(val));
       break;
 
     case VAL_OBJ:
